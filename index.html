@@ -61,6 +61,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px soli
 .pad button{font:inherit;font-size:18px;min-width:44px;height:40px;border:0;border-radius:6px;background:#fff;color:var(--ink);cursor:pointer}
 .saved{font-size:13px;color:var(--soft)}
 
+.handnote{flex:1;color:var(--soft);font-size:14px;border-bottom:2px dashed var(--line);padding:6px 4px}
 .howto{margin:8px 0 0;font-size:14px;color:var(--soft)}
 .score{font-weight:700;color:var(--ink)}
 .secfoot{display:flex;justify-content:flex-end;padding:8px 0 6px}
@@ -99,7 +100,7 @@ const SETS=[
 { id:"d1", tab:"9/27(日)　5教科 各50分",
   plan:["国語 50分（漢字15・語句10・読解15・読みと意味10）","数学 50分（√の計算15・有理化と性質15・二次方程式20）","英語 50分（単語10・時制10・並べかえ10・英作文10・読解10）","理科 50分（イオン式12・電池13・中和13・圧力と力12）","社会 50分（戦争への道15・戦後と冷戦15・高度成長〜現代10・公民10）"],
   secs:[
-  {id:"jp1",sub:"国語",c:"--jp",t:"漢字の書き取り",min:15,note:"カタカナの部分を漢字（送りがながあれば送りがなも）で書く。",qs:[
+  {id:"jp1",sub:"国語",c:"--jp",t:"漢字の書き取り（ノートに手書き）",min:15,hand:1,note:"入力欄はありません。変換で答えが出てしまうので、ノートに番号をつけて手で書く。書き終わったら「答えを見る」を押して、1問ずつ ○／× を付ける。とめ・はね・送りがなまで正しければ○。",qs:[
    "ユウソウな音楽が流れる。","海にモグる。","駅までのキョリを測る。","オウベイの文化にふれる。","犬をクサリでつなぐ。",
    "カンサンとした商店街。","チクサンが盛んな地域。","ツヤのある果物。","高いヘイに囲まれる。","お使いのダチンをもらう。",
    "イクドも挑戦する。","地面にヒザをつく。","風にユレル草木。","アザやかな色彩。","友人をショウカイする。",
@@ -225,7 +226,7 @@ const SETS=[
 // ===== 正答データ =====
 // 文字列/配列: 語句（ふくめばOK）  m: 数式（完全一致）  c: 化学式  e: 英文  s: すべての要素をふくむ  o: 順番どおり  w: 自己採点（模範解答）
 const KEYS={
-jp1:["勇壮","潜","距離","欧米","鎖","閑散","畜産","艶","塀","駄賃","幾度","膝","揺れる","鮮","紹介","蓄積","解釈","悲惨","誇張","冒頭"],
+jp1:["勇壮","潜る","距離","欧米","鎖","閑散","畜産","艶","塀","駄賃","幾度","膝","揺れる","鮮やか","紹介","蓄積","解釈","悲惨","誇張","冒頭"],
 jp2:["不満","願望",["短所","弱点"],["手段","手法"],"興味","反抗","客観","抽象","結果","軽率","和語","漢語","外来語","重箱","湯桶","重箱"],
 jp3:["魯迅","冬",{w:"家を明け渡して故郷に別れを告げ、一家で引っ越すため。"},["ルントウ","閏土"],{s:[["ホンル","宏児"],["シュイション","水生"]]},"イ",
  {w:"一家が落ちぶれて、家を手入れする余裕もなくなっていた。（25字程度）"},
@@ -302,9 +303,11 @@ function showKey(k){
   return "";
 }
 // 最終判定：手動の○×があればそれを優先
+function isHand(sec){const x=SETS[0].secs.find(t=>t.id===sec);return !!(x&&x.hand)}
 function result(id,sec,i){
   if(store["m_"+id]!==undefined)return store["m_"+id];
   if(!store["g_"+sec])return undefined;
+  if(isHand(sec))return null;
   return judge(keyOf(sec,i),store[id]);
 }
 
@@ -333,13 +336,13 @@ function render(){
       const o=qOf(q), id=sec.id+"_"+(i+1), v=store[id]||"", u=store["u_"+id], k=keyOf(sec.id,i), r=result(id,sec.id,i);
       if(onlyWrong&&!(r===0||u))return;
       const nf=`name="f${Math.random().toString(36).slice(2)}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" aria-label="${i+1}の答え"`;
-      const field=o.long?`<textarea data-k="${id}" ${nf}>${esc(v)}</textarea>`:`<input type="search" inputmode="text" data-k="${id}" value="${esc(v)}" ${nf}>`;
+      const field=sec.hand?`<span class="handnote">ノートに書く</span>`:o.long?`<textarea data-k="${id}" ${nf}>${esc(v)}</textarea>`:`<input type="search" inputmode="text" data-k="${id}" value="${esc(v)}" ${nf}>`;
       let mark="";
       if(graded){
         const cls=r===1?"ok":r===0?"ng":"chk", lab=r===1?"○":r===0?"×":"要確認";
         mark=`<div class="res ${cls}"><span class="badge">${lab}</span><span class="key">正答：${esc(showKey(k))}</span>
         <span class="ov"><button data-ov="${id}" data-v="1" aria-label="正解にする">○</button><button data-ov="${id}" data-v="0" aria-label="不正解にする">×</button></span></div>`;
-        if(r===0){const rv=store["re_"+id]||"",rr=store["re_"+id]!==undefined&&k&&!k.w?judge(k,rv):null;
+        if(r===0&&!sec.hand){const rv=store["re_"+id]||"",rr=store["re_"+id]!==undefined&&k&&!k.w?judge(k,rv):null;
           mark+=`<div class="row redo"><input type="search" data-re="${id}" data-sec="${sec.id}" data-i="${i}" value="${esc(rv)}" placeholder="やり直し：もう一度書いてみよう" ${nf}><span class="redo-r">${rr===1?"○ できた":rr===0?"× もう一度":""}</span></div>`}
       }
       body+=`<div class="q"><p class="qt"><b>${i+1}</b>${esc(o.q).replace(/\n/g,"<br>")}</p>
@@ -351,7 +354,7 @@ function render(){
     ${graded?`<span class="score">${sc.ok}／${sc.n} 正解${sc.pend?`（要確認 ${sc.pend}）`:""}</span>`:""}
     <span class="timer"><output id="o_${sec.id}">${fmt(sec.min*60-el)}</output><button data-t="${sec.id}">スタート</button></span></div>
     ${sec.note?`<p class="note">${esc(sec.note).replace(/\n/g,"<br>")}</p>`:""}${body}
-    <div class="secfoot"><button class="grade" data-g="${sec.id}">${graded?"採点をやり直す":"この単元を採点"}</button></div></section>`;
+    <div class="secfoot"><button class="grade" data-g="${sec.id}">${graded?"採点をやり直す":sec.hand?"答えを見る":"この単元を採点"}</button></div></section>`;
   });
   h+=`<div class="done"><button id="gradeAll" class="ghost">全部まとめて採点</button><button id="anaBtn">分析を見る</button><button id="copyBtn">分析データをコピー</button><button class="ghost" id="resetBtn">答えをすべて消す</button><span class="saved" id="savedMsg"></span></div>
   <div id="ana"></div><textarea id="exportBox" readonly></textarea>`;
@@ -396,7 +399,7 @@ function analyze(set){
   const subj={},rows=[],wrong=[];
   set.secs.forEach(sec=>{
     const sc=secScore(sec),t=store["t_"+sec.id]||0;let uns=0,confWrong=0,blank=0;
-    sec.qs.forEach((q,i)=>{const id=sec.id+"_"+(i+1),r=result(id,sec.id,i),u=!!store["u_"+id],a=(store[id]||"").trim();
+    sec.qs.forEach((q,i)=>{const id=sec.id+"_"+(i+1),r=result(id,sec.id,i),u=!!store["u_"+id],a=sec.hand?"（ノートに手書き）":(store[id]||"").trim();
       if(u)uns++; if(!a)blank++; if(r===0&&!u&&a)confWrong++;
       if(r===0||u||r===null)wrong.push({sub:sec.sub,sec:sec.t,no:i+1,q:qOf(q).q.replace(/\n/g," "),a:a||"（無回答）",k:showKey(keyOf(sec.id,i)),r,u,re:store["re_"+id]});
     });
