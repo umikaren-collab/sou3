@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>中間テスト対策 2時間セット</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#fbfcfe; --grid:#dfe8f3; --ink:#1f3a5f; --soft:#5b6f8a; --red:#c8322c;
+  --line:#c9d6e6; --field:#ffffff;
+  --jp:#b85c7a; --ma:#2f7bbf; --en:#d08a1e; --sc:#3a8f5b;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; color:var(--ink); background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  font-family:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP",sans-serif; font-size:17px; line-height:1.7;
+}
+header{max-width:820px;margin:0 auto;padding:28px 20px 8px}
+h1{font-family:"Klee One","BIZ UDPGothic",serif;font-weight:600;font-size:clamp(26px,5vw,36px);margin:0;line-height:1.3}
+.lead{color:var(--soft);margin:6px 0 0;font-size:15px}
+.sets{display:flex;gap:8px;margin:18px 0 0;flex-wrap:wrap}
+.sets button{font:inherit;font-size:15px;border:2px solid var(--ink);background:var(--field);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer}
+.sets button[aria-selected="true"]{background:var(--ink);color:#fff}
+main{max-width:820px;margin:0 auto;padding:8px 20px 140px}
+.plan{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:12px 16px;margin:14px 0 22px;font-size:15px}
+.plan ol{margin:6px 0 0;padding-left:1.4em}
+section.sec{position:relative;background:var(--field);border:1px solid var(--line);border-left:10px solid var(--c);border-radius:4px 8px 8px 4px;margin:0 0 26px;padding:14px 18px 8px}
+.sec h2{font-family:"Klee One","BIZ UDPGothic",serif;font-weight:600;font-size:22px;margin:0;line-height:1.4}
+.sec .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 8px;color:var(--soft);font-size:14px}
+.tag{background:var(--c);color:#fff;border-radius:3px;padding:1px 8px;font-size:13px}
+.timer{margin-left:auto;display:flex;align-items:center;gap:6px}
+.timer output{font-variant-numeric:tabular-nums;font-size:18px;color:var(--ink);min-width:4.2em;text-align:right}
+.timer output.over{color:var(--red)}
+.timer button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:4px;padding:3px 10px;cursor:pointer}
+.note{font-size:14px;color:var(--soft);margin:0 0 8px}
+.q{border-top:1px dashed var(--line);padding:10px 0}
+.q:first-of-type{border-top:0}
+.qt{margin:0 0 6px}
+.qt b{display:inline-block;min-width:2em;color:var(--c)}
+.row{display:flex;gap:10px;align-items:center}
+.row input[type=text],.row textarea{flex:1;font:inherit;font-size:17px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-bottom:2px solid var(--ink);border-radius:3px;padding:6px 10px;min-width:0}
+.row textarea{min-height:5.2em;resize:vertical}
+label.unsure{font-size:13px;color:var(--soft);white-space:nowrap;display:flex;align-items:center;gap:4px;cursor:pointer}
+label.unsure input{accent-color:var(--red);width:18px;height:18px}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--c,var(--ma));outline-offset:2px}
+.done{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+.done button{font:inherit;border-radius:6px;padding:10px 16px;cursor:pointer;border:2px solid var(--red);background:var(--red);color:#fff}
+.done button.ghost{background:var(--field);color:var(--soft);border-color:var(--line)}
+#exportBox{width:100%;min-height:12em;margin-top:10px;font:14px/1.5 "BIZ UDPGothic",sans-serif;display:none}
+.pad{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(31,58,95,.96);display:none;justify-content:center;gap:6px;flex-wrap:wrap;z-index:5}
+.pad.on{display:flex}
+.pad button{font:inherit;font-size:18px;min-width:44px;height:40px;border:0;border-radius:6px;background:#fff;color:var(--ink);cursor:pointer}
+.saved{font-size:13px;color:var(--soft)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--paper:#16202c;--grid:#1f2c3b;--ink:#e4ecf5;--soft:#9fb2c8;--line:#34465c;--field:#1b2735}
+}
+:root[data-theme="dark"]{--paper:#16202c;--grid:#1f2c3b;--ink:#e4ecf5;--soft:#9fb2c8;--line:#34465c;--field:#1b2735}
+@media (max-width:560px){body{font-size:16px}.timer{margin-left:0}section.sec{padding:12px 12px 6px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>中間テスト対策 2時間セット</h1>
+  <p class="lead">答えを入力すると自動で保存されます。終わったら「答えをまとめてコピー」を押して、そのまま貼り付けてください。採点と弱点分析をします。</p>
+  <div class="sets" role="tablist" id="setTabs"></div>
+</header>
+<main id="main"></main>
+<div class="pad" id="pad" aria-label="記号入力"></div>
+
+<script>
+const SETS=[
+{ id:"d1", tab:"今日 9/27(日)　国語・数学・英語",
+  plan:["国語 40分（漢字15・語句10・読解15）","数学 50分（√の計算15・有理化と性質15・二次方程式20）","英語 30分（単語10・時制10・並べかえ10）"],
+  secs:[
+  {id:"jp1",sub:"国語",c:"--jp",t:"漢字の書き取り",min:15,note:"カタカナの部分を漢字（送りがながあれば送りがなも）で書く。",qs:[
+   "ユウソウな音楽が流れる。","海にモグる。","駅までのキョリを測る。","オウベイの文化にふれる。","犬をクサリでつなぐ。",
+   "カンサンとした商店街。","チクサンが盛んな地域。","ツヤのある果物。","高いヘイに囲まれる。","お使いのダチンをもらう。",
+   "イクドも挑戦する。","地面にヒザをつく。","風にユレル草木。","アザやかな色彩。","友人をショウカイする。",
+   "知識をチクセキする。","自由にカイシャクする。","ヒサンな運命。","話をコチョウして伝える。","文章のボウトウを読む。"]},
+  {id:"jp2",sub:"国語",c:"--jp",t:"類義語・対義語・語の種類",min:10,note:"類義語は「＝」、対義語は「↔」。漢字二字で答える。",qs:[
+   "不服 ＝ （　　）","希望 ＝ （　　）","欠点 ＝ （　　）","方法 ＝ （　　）","関心 ＝ （　　）",
+   "服従 ↔ （　　）","主観 ↔ （　　）","具体 ↔ （　　）","原因 ↔ （　　）","慎重 ↔ （　　）",
+   "「決まり」は和語・漢語・外来語のどれか。","「規則」は和語・漢語・外来語のどれか。","「ルール」は和語・漢語・外来語のどれか。",
+   "「本箱（ほんばこ）」は重箱読み・湯桶読みのどちらか。","「手本（てほん）」は重箱読み・湯桶読みのどちらか。","「台所（だいどころ）」は重箱読み・湯桶読みのどちらか。"]},
+  {id:"jp3",sub:"国語",c:"--jp",t:"読解・記述（故郷／作られた「物語」を超えて／俳句）",min:15,note:"教科書の内容を思い出して答える。記述は字数を守る。",qs:[
+   "「故郷」の作者は誰か。",
+   "「故郷」で「私」が故郷に帰ってきた季節は何か。",
+   "「故郷」で「私」が今回帰郷したのは何のためか。簡潔に書け。",
+   "「私」の幼なじみで、再会したとき「私」を「旦那さま」と呼んだ人物の名前を書け。",
+   "「私」のおい（甥）の名前と、ルントウの息子の名前をそれぞれ書け。",
+   "「故郷」の最後で「私」が考えた「希望」として適切なものを選べ。\nア 希望は必ずかなうものである\nイ 希望はもともとあるともないともいえず、多くの人が求めることで実現に近づく\nウ 希望は若い世代とは関係がない\nエ 希望は偶像にすぎず意味がない",
+   {q:"「故郷」で、古い家の屋根に枯れ草がなびいている様子から、一家のどんな事情が読み取れるか。30字以内で書け。",long:1},
+   {q:"「作られた『物語』を超えて」で、筆者は誤解を解くためにどのような態度が必要だと述べているか。「相手の立場」「常識」という言葉を使って40〜50字で書け。",long:1},
+   "「古池や蛙飛びこむ水の音」（松尾芭蕉）の季語と季節を書け。",
+   "上の句の切れ字を書け。",
+   "自由律俳句とはどのような俳句か。簡潔に書け。"]},
+  {id:"ma1",sub:"数学",c:"--ma",t:"√をふくむ計算",min:15,note:"途中式はノートに。ここには答えだけ入力（下のボタンで √ や ² を入れられます）。",qs:[
+   "√12 ＋ √27","√50 − √18 ＋ √8","√45 − √20 ＋ √5","3√6 − √24 ＋ √54","√48 − 6/√3",
+   "(√5 ＋ 2)²","(√3 − √2)²","(√7 ＋ 3)(√7 − 3)","(2√3 ＋ 1)(√3 − 2)","(√6 ＋ 2)(√6 − 5)"]},
+  {id:"ma2",sub:"数学",c:"--ma",t:"有理化・平方根の性質・式の値",min:15,note:"分数は 3/2 のように「/」で入力。答えはいちばん簡単な形に。",qs:[
+   "6/√2 を有理化せよ","√5/(2√3) を有理化せよ","3/√12 を有理化せよ","10/√5 を有理化せよ",
+   "3 ＜ √a ＜ 4 を満たす整数 a は何個あるか","√(20n) が自然数となる最も小さい自然数 n","√(18 − n) が整数となる自然数 n をすべて求めよ","√7 の整数部分と小数部分をそれぞれ求めよ",
+   "x ＝ √3 ＋ 1、y ＝ √3 − 1 のとき、x² − y² の値","x ＝ √5 − 2 のとき、x² ＋ 4x ＋ 4 の値"]},
+  {id:"ma3",sub:"数学",c:"--ma",t:"二次方程式",min:20,note:"解が2つあるときは「5, −2」のようにカンマで区切る。解の公式の答えは約分まで。",qs:[
+   "x(x − 3) ＝ 10","(x ＋ 2)² ＝ 3(x ＋ 2)","2x² ＋ 4x − 1 ＝ 0","3x² − 5x ＋ 1 ＝ 0","x² ＋ 6x − 1 ＝ 0",
+   "x² ＋ ax − 12 ＝ 0 の解の1つが 3 のとき、a の値ともう1つの解",
+   "連続する2つの自然数があり、その積は156である。この2つの自然数を求めよ。",
+   "縦が横より3cm長い長方形の面積が40cm²である。横の長さを求めよ。"]},
+  {id:"en1",sub:"英語",c:"--en",t:"単語のつづり",min:10,note:"日本語に合う英単語を書く。",qs:[
+   "会社","衣服（clothes とは別の語）","化学の","状態・状況","公正な","そのうえ","絶滅","危険",
+   "絶滅の危機にある","市民","世紀","人口","安全に","急速に","結果","続ける"]},
+  {id:"en2",sub:"英語",c:"--en",t:"時制の書きかえ・語の選択",min:10,note:"（　）の指示に従って全文を書く。選択問題は正しい語だけ書く。",qs:[
+   "I play tennis every day.（every day を yesterday にかえて）","It is sunny today.（today を tomorrow にかえて）",
+   "I live in Kagawa.（for ten years を加えて現在完了形に）","Ken is reading a book.（since two o'clock を加えて）",
+   "I visited Kyoto.（twice を加えて「2回訪れたことがある」の文に）","She has finished her homework.（yet を使って否定文に）",
+   "I have lived here (for / since) 2020.","She has (knew / known) him for many years.",
+   "Have you finished your homework (already / yet)?","I (visited / have visited) Kyoto last year."]},
+  {id:"en3",sub:"英語",c:"--en",t:"並べかえ・和訳",min:10,note:"並べかえは全文を書く。文頭は大文字に。",qs:[
+   "あなたはどのくらい長くトムを知っていますか。（you / have / how long / known）Tom?",
+   "私にとって料理をするのは難しい。（for / is / me / it / difficult / to）cook.",
+   "私は彼女に部屋をそうじしてほしい。I（her / want / to / clean）the room.",
+   "私にあなたのペンを使わせてください。（me / let / use / your pen）.",
+   "兄は私が箱を運ぶのを手伝ってくれた。My brother（me / helped / carry）the box.",
+   "私たちはまだ皿を洗っていません。We（not / have / yet / the dishes / washed）.",
+   "和訳：My mother wants me to clean my room.",
+   "和訳：I have been studying English for two hours."]}
+  ]},
+{ id:"d2", tab:"最終日 9/29(火)　理科",
+  plan:["イオン式・化学式 20分","金属・電池 30分","酸・アルカリ・中和 30分","圧力・水圧・浮力 20分","力の合成と分解 20分"],
+  secs:[
+  {id:"sc1",sub:"理科",c:"--sc",t:"イオン式・電離の式",min:20,note:"H⁺ や Cu²⁺ は下のボタンで入力できます（H+ や Cu2+ と打ってもOK）。",qs:[
+   "水素イオン","塩化物イオン","水酸化物イオン","ナトリウムイオン","銅イオン","亜鉛イオン","マグネシウムイオン","硫酸イオン","カリウムイオン","アンモニウムイオン",
+   "塩化水素 HCl の電離","水酸化ナトリウム NaOH の電離","塩化銅 CuCl₂ の電離","硫酸 H₂SO₄ の電離","水酸化カリウム KOH の電離","塩化ナトリウム NaCl の電離"]},
+  {id:"sc2",sub:"理科",c:"--sc",t:"金属のイオンへのなりやすさ・電池",min:30,note:"式は電子を e⁻ で書く。",qs:[
+   "硫酸銅水溶液に亜鉛板を入れると、亜鉛板の表面に何が付着するか。","このとき亜鉛に起こる変化を、e⁻ を使った式で書け。",
+   "マグネシウム・亜鉛・銅を、イオンになりやすい順に書け。","硫酸亜鉛水溶液に銅板を入れるとどうなるか。",
+   "ダニエル電池で −極になるのは亜鉛板・銅板のどちらか。","ダニエル電池の銅板で起こる変化を、e⁻ を使った式で書け。",
+   "電子は導線の中をどちらからどちらへ移動するか。","時間がたつと、硫酸亜鉛水溶液と硫酸銅水溶液の濃さはそれぞれどうなるか。",
+   {q:"ダニエル電池のセロハン膜の役割を2つ書け。",long:1},
+   "電池は、物質がもつ何エネルギーを電気エネルギーに変える装置か。","使うと電圧が下がり、充電できない電池と、充電してくり返し使える電池をそれぞれ何というか。",
+   "水の電気分解の化学反応式を書け。","燃料電池で起こる化学変化を化学反応式で書け。",
+   {q:"燃料電池が環境への悪影響が少ないといわれる理由を書け。",long:1}]},
+  {id:"sc3",sub:"理科",c:"--sc",t:"酸・アルカリ・中和",min:30,note:"",qs:[
+   "酸性の水溶液に共通して含まれるイオン（イオン式）","アルカリ性の水溶液に共通して含まれるイオン（イオン式）",
+   "BTB溶液は酸性・中性・アルカリ性でそれぞれ何色か。","フェノールフタレイン溶液はアルカリ性で何色になるか。",
+   "うすい塩酸にマグネシウムリボンを入れると発生する気体の名前と化学式","中性の水溶液の pH の値","酸性が強いほど pH の値はどうなるか。",
+   "塩酸をしみこませた糸を pH試験紙の中央に置き電圧を加えた。赤色の部分は陽極・陰極のどちらへ移動するか。また、それは何イオンによるか。",
+   "水酸化ナトリウム水溶液で同じ実験をすると、青色の部分はどちらの極へ移動するか。また、それは何イオンによるか。",
+   "塩酸と水酸化ナトリウム水溶液の中和を化学反応式で書け。","中和で起こる反応をイオン式を使って書け。",
+   {q:"「塩」とはどのような物質か。「陰イオン」「陽イオン」を使って書け。",long:1},
+   "硫酸と水酸化バリウム水溶液を混ぜたときにできる白い沈殿（塩）の名前",
+   "塩酸に水酸化ナトリウム水溶液を少しずつ加えて中性になるまでの間、数が変わらないイオンと、減っていくイオンをそれぞれ書け。",
+   {q:"こまごめピペットで液体を吸ったまま、先を上に向けてはいけない理由を書け。",long:1}]},
+  {id:"sc4",sub:"理科",c:"--sc",t:"圧力・水圧・浮力",min:20,note:"100gの物体にはたらく重力を1Nとする。1cm² ＝ 0.0001m²。",qs:[
+   "質量600gの直方体（10cm×5cm×4cm）を、10cm×5cm の面を下にして置いた。机が受ける圧力は何Paか。",
+   "同じ直方体を 5cm×4cm の面を下にして置いた。机が受ける圧力は何Paか。",
+   "水圧はどの向きにはたらくか。また、深さとどんな関係があるか。",
+   "空気中で2.5Nを示す物体を、全体を水中に沈めると1.7Nを示した。浮力は何Nか。",
+   "その物体をさらに深く沈めると（底にはつかない）、浮力はどうなるか。",
+   {q:"水中の物体に浮力が生じる理由を「水圧」という言葉を使って書け。",long:1},
+   "物体が水に浮いて静止しているとき、浮力と重力の大きさの関係はどうなっているか。"]},
+  {id:"sc5",sub:"理科",c:"--sc",t:"力の合成と分解",min:20,note:"",qs:[
+   "2つの力と同じはたらきをする1つの力を何というか。また、それを求めることを何というか。",
+   "1つの力を、同じはたらきをする2つの力に分けたとき、その2つの力を何というか。",
+   "角度のある2力の合力は、2力を2辺とする何の何で表されるか。",
+   "一直線上で同じ向きにはたらく3Nと5Nの力の合力は何Nか。",
+   "一直線上で反対向きにはたらく3Nと5Nの力の合力は何Nか。また、どちら向きか。",
+   "斜面上の台車にはたらく重力を分解する。斜面の傾きを大きくすると、斜面に平行な分力と垂直な分力はそれぞれどうなるか。",
+   "台車が斜面を下るとき、速さの変化をより大きくするにはどうすればよいか。",
+   "2本のばねばかりで同じ合力をつくるとき、2本の間の角度を大きくすると、それぞれに必要な力の大きさはどうなるか。",
+   "物体が静止しているとき、物体にはたらく力の合力は何Nか。"]}
+  ]}
+];
+
+const KEY="nnbm-testprep-2026-09";
+let store={};
+try{store=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){store={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
+
+let current=localStorage.getItem(KEY+"-set")||"d1";
+const tabs=document.getElementById("setTabs"), main=document.getElementById("main");
+const esc=s=>s.replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+
+function renderTabs(){
+  tabs.innerHTML="";
+  SETS.forEach(s=>{const b=document.createElement("button");b.textContent=s.tab;b.setAttribute("role","tab");b.setAttribute("aria-selected",s.id===current);
+    b.onclick=()=>{current=s.id;try{localStorage.setItem(KEY+"-set",current)}catch(e){};renderTabs();render();window.scrollTo(0,0)};tabs.appendChild(b)});
+}
+const fmt=s=>{const a=Math.abs(s);return (s<0?"−":"")+Math.floor(a/60)+":"+String(a%60).padStart(2,"0")};
+
+function render(){
+  const set=SETS.find(s=>s.id===current);
+  let h=`<div class="plan">この日の流れ（合計120分）<ol>${set.plan.map(p=>`<li>${p}</li>`).join("")}</ol></div>`;
+  set.secs.forEach(sec=>{
+    const el=(store["t_"+sec.id]||0);
+    h+=`<section class="sec" style="--c:var(${sec.c})"><h2>${esc(sec.t)}</h2>
+    <div class="meta"><span class="tag">${sec.sub}</span><span>目安 ${sec.min}分</span>
+    <span class="timer"><output id="o_${sec.id}">${fmt(sec.min*60-el)}</output><button data-t="${sec.id}">スタート</button></span></div>
+    ${sec.note?`<p class="note">${esc(sec.note)}</p>`:""}`;
+    sec.qs.forEach((q,i)=>{
+      const o=typeof q==="string"?{q}:q, id=sec.id+"_"+(i+1), v=store[id]||"", u=store["u_"+id];
+      const field=o.long?`<textarea id="${id}" data-k="${id}">${esc(v)}</textarea>`:`<input type="text" id="${id}" data-k="${id}" value="${esc(v)}" autocomplete="off" spellcheck="false">`;
+      h+=`<div class="q"><p class="qt"><b>${i+1}</b>${esc(o.q).replace(/\n/g,"<br>")}</p>
+      <div class="row">${field}<label class="unsure"><input type="checkbox" data-u="${id}" ${u?"checked":""}>自信なし</label></div></div>`;
+    });
+    h+=`</section>`;
+  });
+  h+=`<div class="done"><button id="copyBtn">答えをまとめてコピー</button><button class="ghost" id="resetBtn">このセットの答えを消す</button><span class="saved" id="savedMsg"></span></div>
+  <textarea id="exportBox" readonly></textarea>`;
+  main.innerHTML=h;
+  bind(set);
+}
+
+const timers={};
+function bind(set){
+  main.querySelectorAll("[data-k]").forEach(f=>f.addEventListener("input",()=>{store[f.dataset.k]=f.value;save()}));
+  main.querySelectorAll("[data-u]").forEach(c=>c.addEventListener("change",()=>{store["u_"+c.dataset.u]=c.checked;save()}));
+  main.querySelectorAll("[data-t]").forEach(b=>{
+    const id=b.dataset.t, sec=set.secs.find(s=>s.id===id), out=document.getElementById("o_"+id);
+    const show=()=>{const r=sec.min*60-(store["t_"+id]||0);out.textContent=fmt(r);out.classList.toggle("over",r<0)};
+    show();
+    if(timers[id]){b.textContent="一時停止"}
+    b.onclick=()=>{
+      if(timers[id]){clearInterval(timers[id]);delete timers[id];b.textContent="再開";return}
+      timers[id]=setInterval(()=>{store["t_"+id]=(store["t_"+id]||0)+1;save();const o=document.getElementById("o_"+id);if(o){const r=sec.min*60-store["t_"+id];o.textContent=fmt(r);o.classList.toggle("over",r<0)}},1000);
+      b.textContent="一時停止";
+    };
+  });
+  document.getElementById("copyBtn").onclick=()=>exportSet(set);
+  document.getElementById("resetBtn").onclick=()=>{
+    if(!confirm("このセットの答えと時間をすべて消します。よろしいですか？"))return;
+    set.secs.forEach(sec=>{delete store["t_"+sec.id];sec.qs.forEach((q,i)=>{const id=sec.id+"_"+(i+1);delete store[id];delete store["u_"+id]})});
+    save();render();
+  };
+}
+
+function exportSet(set){
+  let t=`【${set.tab}】\n`;
+  set.secs.forEach(sec=>{
+    const used=store["t_"+sec.id]||0;
+    t+=`\n■${sec.sub}｜${sec.t}（かかった時間 ${Math.floor(used/60)}分${used%60}秒／目安${sec.min}分）\n`;
+    sec.qs.forEach((q,i)=>{const o=typeof q==="string"?{q}:q,id=sec.id+"_"+(i+1);
+      t+=`${i+1}. ${o.q.replace(/\n/g," ")}\n　→ ${(store[id]||"（無回答）").replace(/\n/g," ")}${store["u_"+id]?"　［自信なし］":""}\n`});
+  });
+  const box=document.getElementById("exportBox"), msg=document.getElementById("savedMsg");
+  box.value=t;box.style.display="block";
+  const ok=()=>{msg.textContent="コピーしました。チャットに貼り付けてください。"};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,()=>{box.select();msg.textContent="下の文字を全部選んでコピーしてください。"})}
+  else{box.select();try{document.execCommand("copy");ok()}catch(e){msg.textContent="下の文字を全部選んでコピーしてください。"}}
+}
+
+// 記号パッド
+const SYMS=["√","²","³","±","−","×","÷","/","(",")","⁺","⁻","²⁺","₂","₃","₄","→","e⁻"];
+const pad=document.getElementById("pad");let lastField=null;
+SYMS.forEach(s=>{const b=document.createElement("button");b.type="button";b.textContent=s;b.setAttribute("aria-label",s+" を入力");
+  b.addEventListener("mousedown",e=>e.preventDefault());b.addEventListener("touchstart",e=>e.preventDefault(),{passive:false});
+  const ins=()=>{if(!lastField)return;const f=lastField,st=f.selectionStart??f.value.length,en=f.selectionEnd??f.value.length;
+    f.setRangeText(s,st,en,"end");f.dispatchEvent(new Event("input"));f.focus()};
+  b.addEventListener("click",ins);b.addEventListener("touchend",e=>{e.preventDefault();ins()});pad.appendChild(b)});
+document.addEventListener("focusin",e=>{const f=e.target;if(f.matches&&f.matches("[data-k]")){const sec=f.dataset.k.slice(0,2);lastField=f;pad.classList.toggle("on",["ma","sc"].includes(sec))}});
+document.addEventListener("focusout",()=>setTimeout(()=>{if(!document.activeElement||!document.activeElement.matches("[data-k]"))pad.classList.remove("on")},150));
+
+renderTabs();render();
+</script>
+</body>
+</html>
