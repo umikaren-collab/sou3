@@ -72,6 +72,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px soli
 .res .key{flex:1;min-width:12em}
 .res.ng .key{color:var(--red)}
 .ov button{font:inherit;font-size:14px;width:34px;height:30px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:4px;cursor:pointer;margin-left:4px}
+.peek{font:inherit;font-size:13px;border:1px dashed var(--line);background:transparent;color:var(--soft);border-radius:4px;padding:2px 8px;cursor:pointer}
 .redo{margin-top:6px}.redo input{border-bottom-color:var(--red)!important}.redo-r{font-size:14px;min-width:6em;color:var(--soft)}
 .anabox{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:16px;overflow-x:auto}
 .anabox h3,.anabox h4{margin:0 0 8px;font-family:"Klee One","BIZ UDPGothic",serif;font-weight:600}
@@ -298,6 +299,20 @@ const SETS=[
    "本文の内容に合うものを選べ。\nア ケンはもうレポートを書き終えた\nイ ケンの姉は、ケンが写真を探すのを手伝った\nウ ケンは友達にこの問題を考えてほしくない",
    {q:"I want my friends to think about it too. を日本語に。",long:1}]}
   ]},
+{ id:"d4", tab:"9/29(火)朝　国数英 最終チェック30分", planTitle:"テスト前の最終チェック（30分）",
+  plan:["国語 10分（類義語・対義語、句切れ）","数学 12分（√と±の区別、二次方程式、式の値）","英語 8分（語順パターンの英作文、will、begin）"],
+  secs:[
+  {id:"cj1",sub:"国語",c:"--jp",t:"類義語・対義語／俳句",min:10,note:"昨日まちがえた・空欄だった問題だけです。句切れ：「や」「かな」などの切れ字や、意味が切れるところで数える（名月や＝最初の五音で切れる＝初句切れ）。",qs:[
+   "永遠 ＝ （　　）","手本 ＝ （　　）","案外 ＝ （　　）","同意 ＝ （　　）","服従 ↔ （　　）","具体 ↔ （　　）","義務 ↔ （　　）","生産 ↔ （　　）","楽観 ↔ （　　）","需要 ↔ （　　）","絶対 ↔ （　　）",
+   "「名月や池をめぐりて夜もすがら」は何句切れか。","「柿食へば鐘が鳴るなり法隆寺」は何句切れか。","季語を季節ごとに分類して集めた本","「役場（やく＋ば）」は重箱読み・湯桶読みのどちらか。"]},
+  {id:"cm1",sub:"数学",c:"--ma",t:"√と±の区別・二次方程式・式の値",min:12,note:"注意：√a はプラスの数だけ（√9＝3、√3×√3＝3）。± がつくのは「平方根」を答えるときと、x²＝a を解くときだけ（9の平方根は±3、x²＝9 なら x＝±3）。",qs:[
+   "√3 × √3","√9","9の平方根","x² ＝ 9 を解け","√2 × √8",
+   "x² − 5x ＋ 6 ＝ 0","x² ＋ 3x ＋ 1 ＝ 0","2x² ＋ 4x − 1 ＝ 0","(x ＋ 2)² ＝ 3(x ＋ 2)",
+   "√7 の小数部分（整数部分をひく）","x ＝ √5 − 2 のとき x² ＋ 4x ＋ 4（＝(x＋2)² を使う）"]},
+  {id:"ce1",sub:"英語",c:"--en",t:"語順パターンの英作文",min:8,note:"型を先に書いてから単語を入れる：It is 形容詞 for 人 to 原形／want 人 to 原形／let 人 原形／help 人 原形。to のあとは原形（came ではなく come）。tomorrow には will。",qs:[
+   "私にとって英語を話すことは難しい。","彼らにとってサッカーをすることは楽しい。","私は彼に手伝ってほしい。","母は私に早く寝てほしいと思っている。","私にあなたの写真を見せてください。（let を使って）","兄は私が宿題をするのを手伝ってくれた。",
+   "明日は雨でしょう。（It で始めて rainy を使う）","begin の過去形と過去分詞","I want you to (come / came / coming) to the party."]}
+  ]},
 { id:"d3", tab:"9/29(火)　社会・理科 各2時間", planTitle:"この日の流れ（各教科2時間）",
   plan:["社会 120分（年代20・戦前20・戦後20・高度成長〜現代20・公民20・記述20）","理科 120分（イオンの電荷20・電離の式20・電子の式と電池20・酸アルカリ中和25・圧力浮力力25・まとめ記述10）"],
   secs:[
@@ -363,6 +378,11 @@ const SETS=[
 // ===== 正答データ =====
 // 文字列/配列: 語句（ふくめばOK）  m: 数式（完全一致）  c: 化学式  e: 英文  s: すべての要素をふくむ  o: 順番どおり  w: 自己採点（模範解答）
 const KEYS={
+cj1:["永久","模範","意外","賛成","反抗","抽象","権利","消費","悲観","供給","相対",["初句切れ","一句切れ","1句切れ"],["二句切れ","2句切れ"],"歳時記","重箱"],
+cm1:[{m:["3"]},{m:["3"]},{m:["±3"]},{m:["±3","3,-3","-3,3"]},{m:["4"]},{s:["2","3"]},{m:["(-3±√5)/2","-3±√5/2"]},{m:["(-2±√6)/2","-2±√6/2"]},{s:["-2","1"]},{m:["√7-2"]},{m:["5"]}],
+ce1:[{e:["It is difficult for me to speak English.","It's difficult for me to speak English.","It is hard for me to speak English."]},{e:["It is fun for them to play soccer.","It's fun for them to play soccer."]},{e:["I want him to help me."]},
+ {e:["My mother wants me to go to bed early.","My mother wants me to sleep early."]},{e:["Let me see your pictures.","Let me see your picture.","Let me see your photos.","Let me see your photo.","Please let me see your pictures.","Please let me see your photos."]},
+ {e:["My brother helped me do my homework.","My brother helped me with my homework.","My big brother helped me do my homework.","My older brother helped me do my homework."]},{e:["It will be rainy tomorrow.","It'll be rainy tomorrow."]},{e:["began, begun"]},{e:["come","I want you to come to the party."]}],
 jp1:["勇壮","潜る","距離","欧米","鎖","閑散","畜産","艶","塀","駄賃","幾度","膝","揺れる","鮮やか","紹介","蓄積","解釈","悲惨","誇張","冒頭"],
 jp2:["不満","願望",["短所","弱点"],["手段","手法"],"興味","反抗","客観","抽象","結果",["軽率","大胆"],"和語","漢語","外来語","重箱","湯桶","重箱"],
 jp3:["魯迅","冬",{w:"家を明け渡して故郷に別れを告げ、一家で引っ越すため。"},["ルントウ","閏土"],{s:[["ホンル","宏児"],["シュイション","水生"]]},"イ",
@@ -524,7 +544,8 @@ function render(){
       let mark="";
       if(graded){
         const cls=r===1?"ok":r===0?"ng":"chk", lab=r===1?"○":r===0?"×":"要確認";
-        mark=`<div class="res ${cls}"><span class="badge">${lab}</span><span class="key">正答：${esc(showKey(k))}</span>
+        const hide=r===0&&!sec.hand&&!store["re_"+id]&&!store["sk_"+id];
+        mark=`<div class="res ${cls}"><span class="badge">${lab}</span>${hide?`<span class="key">正答：<button class="peek" data-show="${id}">先にやり直してから見る（どうしても分からないときだけ押す）</button></span>`:`<span class="key">正答：${esc(showKey(k))}</span>`}
         <span class="ov"><button data-ov="${id}" data-v="1" aria-label="正解にする">○</button><button data-ov="${id}" data-v="0" aria-label="不正解にする">×</button></span></div>`;
         if(r===0&&!sec.hand){const rv=store["re_"+id]||"",rr=store["re_"+id]!==undefined&&k&&!k.w?judge(k,rv):null;
           mark+=`<div class="row redo"><input type="search" data-re="${id}" data-sec="${sec.id}" data-i="${i}" value="${esc(rv)}" placeholder="やり直し：もう一度書いてみよう" ${nf}><span class="redo-r">${rr===1?"○ できた":rr===0?"× もう一度":""}</span></div>`}
@@ -552,9 +573,10 @@ function bind(set){
   main.querySelectorAll("[data-k]").forEach(f=>f.addEventListener("input",()=>{store[f.dataset.k]=f.value;save()}));
   main.querySelectorAll("[data-re]").forEach(f=>{
     f.addEventListener("input",()=>{store["re_"+f.dataset.re]=f.value;save()});
-    f.addEventListener("change",()=>{const k=keyOf(f.dataset.sec,+f.dataset.i),r=k&&!k.w?judge(k,f.value):null;f.nextElementSibling.textContent=r===1?"○ できた":r===0?"× もう一度":""});
+    f.addEventListener("change",()=>{store["re_"+f.dataset.re]=f.value;save();keepScroll(render)});
   });
   main.querySelectorAll("[data-u]").forEach(c=>c.addEventListener("change",()=>{store["u_"+c.dataset.u]=c.checked;save()}));
+  main.querySelectorAll("[data-show]").forEach(b=>b.onclick=()=>{store["sk_"+b.dataset.show]=1;save();keepScroll(render)});
   main.querySelectorAll("[data-ov]").forEach(b=>b.onclick=()=>{store["m_"+b.dataset.ov]=+b.dataset.v;save();keepScroll(render)});
   main.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{const id=b.dataset.g;
     if(store["g_"+id]&&!confirm("自分で付けた○×を消して、採点をやり直しますか？"))return;
