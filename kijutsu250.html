@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>手書き一問一答 入試250</title>
+<style>
+:root{
+  --bg:#f4f1ea; --card:#fffdf8; --ink:#1f2a33; --sub:#6b7680; --line:#ddd6c8;
+  --accent:#1f6f78; --ok:#2e8b57; --ng:#c0392b; --warn:#b7791f;
+  --kokugo:#b5473a; --sugaku:#2f6db5; --eigo:#7a4fb0; --shakai:#3d8b4f; --rika:#c47a1c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;-webkit-user-select:none;user-select:none}
+button{font-family:inherit;cursor:pointer;border:none}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-size:22px;letter-spacing:.04em}
+.total{font-size:15px;color:var(--sub)}
+.total b{font-size:26px;color:var(--ink)}
+.btn{padding:12px 18px;border-radius:10px;font-size:16px;font-weight:700;background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn.ng{background:var(--ng);color:#fff;border-color:var(--ng)}
+.btn:disabled{opacity:.45;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.subj{background:var(--card);border-radius:14px;padding:16px;border-top:6px solid var(--c);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.subj h2{font-size:20px;display:flex;justify-content:space-between;align-items:baseline}
+.subj h2 span{font-size:15px;color:var(--sub);font-weight:400}
+.subj h2 span b{color:var(--c);font-size:22px}
+.sets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.setbtn{padding:10px 2px;border-radius:10px;background:#fff;border:2px solid var(--line);font-size:14px;line-height:1.35}
+.setbtn small{display:block;font-size:12px;color:var(--sub)}
+.setbtn .sc{font-size:16px;font-weight:700;color:var(--c)}
+.setbtn.done{border-color:var(--c)}
+.note{margin-top:16px;font-size:13px;color:var(--sub);line-height:1.7}
+.hidden{display:none!important}
+
+/* quiz */
+.qtop{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tag{padding:4px 12px;border-radius:999px;color:#fff;font-weight:700;font-size:14px;background:var(--c)}
+.prog{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--c);transition:width .3s}
+.qcount{font-weight:700;font-size:15px;min-width:60px;text-align:right}
+.qcard{background:var(--card);border-radius:14px;padding:18px 20px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.qsetname{font-size:13px;color:var(--sub);margin-bottom:6px}
+.qtext{font-size:22px;line-height:1.6;font-weight:600;user-select:text;-webkit-user-select:text}
+.qtext em{font-style:normal;border-bottom:3px solid var(--c);padding:0 2px}
+.padwrap{position:relative;background:#fff;border-radius:14px;border:2px solid var(--line);overflow:hidden}
+.padwrap.locked{opacity:.85}
+canvas#pad{display:block;width:100%;height:330px;touch-action:none;background:
+  repeating-linear-gradient(#fff 0 81px,#e9eef2 81px 83px)}
+.padhint{position:absolute;left:14px;top:10px;font-size:13px;color:#a9b2ba;pointer-events:none}
+.tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tools .sp{flex:1}
+.res{background:var(--card);border-radius:14px;padding:14px 18px;margin-top:10px;border-left:8px solid var(--line)}
+.res.ok{border-left-color:var(--ok)}
+.res.ng{border-left-color:var(--ng)}
+.res .mark{font-size:30px;font-weight:900;margin-right:8px}
+.res.ok .mark{color:var(--ok)} .res.ng .mark{color:var(--ng)}
+.res .row{font-size:17px;margin-top:6px;line-height:1.6}
+.res .row b{color:var(--sub);font-weight:600;font-size:14px;margin-right:6px}
+.res .cmt{font-size:15px;color:var(--sub);margin-top:6px}
+.res .fix{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* result */
+.big{font-size:64px;font-weight:900;color:var(--c);text-align:center;margin:10px 0}
+.big small{font-size:24px;color:var(--sub)}
+table.rv{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:15px}
+table.rv td,table.rv th{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.rv th{background:#efe9dc;font-size:13px;color:var(--sub)}
+table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.m-ok{color:var(--ok);font-weight:900;font-size:20px}.m-ng{color:var(--ng);font-weight:900;font-size:20px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.mbox{background:var(--card);border-radius:14px;padding:22px;max-width:520px;width:100%}
+.mbox h3{margin-bottom:12px}
+.mbox label{display:block;font-size:14px;color:var(--sub);margin-top:12px}
+.mbox input[type=text],.mbox input[type=password]{width:100%;padding:10px;font-size:16px;border:2px solid var(--line);border-radius:8px;margin-top:4px;user-select:text;-webkit-user-select:text}
+.mbox .chk{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:15px;color:var(--ink)}
+.mbox .chk input{width:22px;height:22px}
+.mbox .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.mbox p{font-size:13px;color:var(--sub);line-height:1.6;margin-top:8px}
+@media (max-width:640px){.qtext{font-size:19px}canvas#pad{height:260px}}
+</style>
+</head>
+<body>
+
+<!-- ===== HOME ===== -->
+<div id="home" class="wrap">
+  <header>
+    <div>
+      <h1>手書き一問一答　入試250</h1>
+      <div class="total">合計（各セットの最高点）<b id="grand">0</b> / 250点</div>
+    </div>
+    <button class="btn" onclick="openSettings()">⚙ 設定</button>
+  </header>
+  <div class="grid" id="subjGrid"></div>
+  <div class="note" id="modeNote"></div>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div id="quiz" class="wrap hidden">
+  <div class="qtop">
+    <button class="btn" onclick="quitQuiz()">✕</button>
+    <span class="tag" id="qTag"></span>
+    <div class="prog"><i id="qProg"></i></div>
+    <span class="qcount" id="qCount"></span>
+  </div>
+  <div class="qcard">
+    <div class="qsetname" id="qSetName"></div>
+    <div class="qtext" id="qText"></div>
+  </div>
+  <div class="padwrap" id="padWrap">
+    <canvas id="pad"></canvas>
+    <div class="padhint" id="padHint">ここに答えを書いてください</div>
+  </div>
+  <div class="tools" id="tools">
+    <button class="btn" onclick="undo()">↶ 1画もどす</button>
+    <button class="btn" onclick="clearPad()">🗑 全部消す</button>
+    <div class="sp"></div>
+    <button class="btn primary" id="gradeBtn" onclick="grade()">答え合わせ</button>
+  </div>
+  <div id="resBox"></div>
+</div>
+
+<!-- ===== RESULT ===== -->
+<div id="result" class="wrap hidden">
+  <header>
+    <h1 id="rTitle"></h1>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="startSet(cur.subj,cur.set)">もう一度</button>
+      <button class="btn primary" onclick="goHome()">ホームへ</button>
+    </div>
+  </header>
+  <div class="big" id="rScore"></div>
+  <div style="text-align:center;margin-bottom:14px;color:var(--sub)" id="rBest"></div>
+  <table class="rv"><thead><tr><th></th><th>問題</th><th>あなたの答え</th><th>正解</th></tr></thead><tbody id="rBody"></tbody></table>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="modal hidden" id="settings">
+  <div class="mbox">
+    <h3>設定</h3>
+    <label>Gemini APIキー（空欄なら自己採点モード）
+      <input type="password" id="sKey" placeholder="AIza..." autocomplete="off">
+    </label>
+    <label>書き起こし用モデル（漢字・英単語。正解を見せずに読む）
+      <input type="text" id="sModelRead" placeholder="gemini-flash-latest" list="modelList">
+    </label>
+    <label>判定用モデル（数式・用語。正解と見比べて判定）
+      <input type="text" id="sModelJudge" placeholder="gemini-flash-lite-latest" list="modelList">
+    </label>
+    <datalist id="modelList">
+      <option value="gemini-flash-latest">標準（Flash）</option>
+      <option value="gemini-flash-lite-latest">最安（Flash-Lite）</option>
+    </datalist>
+    <p>漢字・英単語は1文字違いも見逃さないよう、正解を見せずに書き起こし、プログラムで照合します。</p>
+    <div class="chk"><input type="checkbox" id="sPen"><span>ペンのみで書く（手のひら・指のタッチを無視）</span></div>
+    <p>APIキーはこの端末のブラウザ内にだけ保存され、HTMLファイルには含まれません。</p>
+    <div class="acts">
+      <button class="btn" onclick="resetScores()">成績をリセット</button>
+      <button class="btn" onclick="closeSettings()">閉じる</button>
+      <button class="btn primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   問題データ
+   各問題：[問題文, 正解, 別解...]
+   rule：AI採点時の判定基準
+   ============================================================ */
+const SUBJECTS = [
+{ id:"kokugo", name:"国語", color:"var(--kokugo)", sets:[
+  { name:"漢字の読み", mode:"exact", hint:"ひらがな", rule:"ひらがなで答える問題。カタカナ・漢字での解答は不正解。送り仮名部分を含めて書いても、読みが正しければ正解。", qs:[
+    ["<em>穏やか</em>な海　（読みをひらがなで）","おだやか","おだ"],
+    ["交通が<em>滞る</em>　（読みをひらがなで）","とどこおる"],
+    ["音楽会を<em>催す</em>　（読みをひらがなで）","もよおす"],
+    ["損害を<em>償う</em>　（読みをひらがなで）","つぐなう"],
+    ["練習を<em>怠る</em>　（読みをひらがなで）","おこたる"],
+    ["力の<em>均衡</em>を保つ　（読みをひらがなで）","きんこう"],
+    ["教室の<em>雰囲気</em>　（読みをひらがなで）","ふんいき"],
+    ["自然の<em>恩恵</em>を受ける　（読みをひらがなで）","おんけい"],
+    ["<em>頻繁</em>に訪れる　（読みをひらがなで）","ひんぱん"],
+    ["<em>柔和</em>な表情　（読みをひらがなで）","にゅうわ"]
+  ]},
+  { name:"漢字の書き", mode:"exact", hint:"漢字（送り仮名があればひらがなも）", rule:"漢字で書く問題。ひらがなのままは不正解。送り仮名が必要な場合は送り仮名まで正しく書けていること。とめ・はね程度の乱れは許容するが、別の字に見える誤字は不正解。", qs:[
+    ["<em>ケワ</em>しい山道を登る　（カタカナを漢字に）","険"],
+    ["責任を<em>ハ</em>たす　（カタカナを漢字に）","果"],
+    ["<em>ユウビン</em>局に行く　（カタカナを漢字に）","郵便"],
+    ["<em>シュクフク</em>の言葉を贈る　（カタカナを漢字に）","祝福"],
+    ["<em>ドクソウ</em>的な作品　（カタカナを漢字に）","独創"],
+    ["<em>ケイカイ</em>を強める　（カタカナを漢字に）","警戒"],
+    ["荷物を<em>アズ</em>ける　（カタカナを漢字に）","預"],
+    ["<em>ジュンジョ</em>よく並ぶ　（カタカナを漢字に）","順序"],
+    ["新しい説を<em>トナ</em>える　（カタカナを漢字に）","唱"],
+    ["試合に<em>ノゾ</em>む　（カタカナを漢字に）","臨"]
+  ]},
+  { name:"漢字（読み・書き）", mode:"exact", hint:"漢字またはひらがな", rule:"「読み」と書かれた問題はひらがなで、「書き」と書かれた問題は漢字で答える。指定と違う文字種は不正解。", qs:[
+    ["【読み】社会に<em>貢献</em>する","こうけん"],
+    ["【読み】研究に<em>携わる</em>","たずさわる"],
+    ["【読み】花の香りが<em>漂う</em>","ただよう"],
+    ["【読み】<em>抑揚</em>をつけて読む","よくよう"],
+    ["【読み】判断を相手に<em>委ねる</em>","ゆだねる"],
+    ["【書き】列車が<em>ケイテキ</em>を鳴らす","警笛"],
+    ["【書き】野菜を<em>サイバイ</em>する","栽培"],
+    ["【書き】薬がよく<em>キ</em>く","効"],
+    ["【書き】布を青く<em>ソ</em>める","染"],
+    ["【書き】人口の<em>スイイ</em>を調べる","推移"]
+  ]},
+  { name:"四字熟語・ことわざ", mode:"exact", hint:"漢字1字", rule:"□に入る漢字1字を答える。ひらがなは不正解。", qs:[
+    ["「□刀直入」　□に入る漢字1字","単"],
+    ["「起死□生」　□に入る漢字1字","回"],
+    ["「異□同音」　□に入る漢字1字","口"],
+    ["「□心伝心」　□に入る漢字1字","以"],
+    ["「温故知□」　□に入る漢字1字","新"],
+    ["ことわざ「猫に□判」　□に入る漢字1字","小"],
+    ["慣用句「□を巻く」（ひどく感心する）　□に入る漢字1字","舌"],
+    ["ことわざ「馬の耳に□仏」　□に入る漢字1字","念"],
+    ["ことわざ「石の上にも□年」　□に入る漢字1字","三"],
+    ["故事成語「漁夫の□」　□に入る漢字1字","利"]
+  ]},
+  { name:"文法・敬語・文学史", rule:"語句で答える。漢字・ひらがなどちらでも意味が正しければ正解（人名は漢字が望ましいが、ひらがなでも読みが正しければ正解）。", qs:[
+    ["「美しい」の品詞名を答えなさい","形容詞"],
+    ["「静かだ」の品詞名を答えなさい","形容動詞"],
+    ["「<em>ゆっくり</em>歩く」の傍線部の品詞名","副詞"],
+    ["「行く」の尊敬語（特別な動詞）を答えなさい","いらっしゃる","おいでになる","行かれる"],
+    ["「見る」の謙譲語（特別な動詞）を答えなさい","拝見する","拝見"],
+    ["「言う」の謙譲語（特別な動詞）を答えなさい","申す","申し上げる"],
+    ["『走れメロス』の作者","太宰治"],
+    ["『坊っちゃん』の作者","夏目漱石"],
+    ["『枕草子』の作者","清少納言"],
+    ["歴史的仮名遣い「おもふ」を現代仮名遣いに","おもう"]
+  ]}
+]},
+{ id:"sugaku", name:"数学", color:"var(--sugaku)", sets:[
+  { name:"計算", rule:"数式として等価で、最も簡単な形になっていれば正解（項の順序・因数の順序は問わない）。約分や根号の簡略化が不十分なものは不正解。", qs:[
+    ["−3 ＋ 8 ×（−2） を計算しなさい","-19"],
+    ["（−2）³ − 4² を計算しなさい","-24"],
+    ["3(2x − 1) − 2(x − 4) を計算しなさい","4x+5"],
+    ["√48 − √12 を計算しなさい","2√3"],
+    ["(√3 ＋ 1)² を計算しなさい","4+2√3"],
+    ["6x²y ÷ 2xy × 3x を計算しなさい","9x²"],
+    ["(x ＋ 3)(x − 5) を展開しなさい","x²-2x-15"],
+    ["x² − 7x ＋ 12 を因数分解しなさい","(x-3)(x-4)"],
+    ["2x² − 8 を因数分解しなさい","2(x+2)(x-2)"],
+    ["12／√6 の分母を有理化しなさい","2√6"]
+  ]},
+  { name:"方程式", rule:"解がすべて正しければ正解。「x=」の有無は問わない。解が2つある問題は両方そろって正解。連立方程式は x と y の両方が正しいこと。", qs:[
+    ["方程式 3x − 7 ＝ 2x ＋ 5 を解きなさい","x=12"],
+    ["方程式 0.2x ＋ 1 ＝ 0.5x − 0.8 を解きなさい","x=6"],
+    ["連立方程式　x ＋ y ＝ 7、2x − y ＝ 5 を解きなさい","x=4, y=3"],
+    ["連立方程式　3x ＋ 2y ＝ 4、x − y ＝ 3 を解きなさい","x=2, y=-1"],
+    ["二次方程式 x² − 5x − 14 ＝ 0 を解きなさい","x=7, -2"],
+    ["二次方程式 x² ＝ 18 を解きなさい","x=±3√2"],
+    ["二次方程式 x² ＋ 4x − 1 ＝ 0 を解きなさい","x=-2±√5"],
+    ["二次方程式 (x − 3)² ＝ 5 を解きなさい","x=3±√5"],
+    ["二次方程式 x² − 6x ＝ 0 を解きなさい","x=0, 6"],
+    ["二次方程式 2x² − 3x − 1 ＝ 0 を解きなさい","x=(3±√17)/4"]
+  ]},
+  { name:"関数", rule:"式・値が数学的に等価なら正解。座標は (x, y) の両方が正しいこと。変域は不等号の向き・等号まで正しいこと。", qs:[
+    ["y は x に比例し、x ＝ 3 のとき y ＝ −12。y を x の式で表しなさい","y=-4x"],
+    ["y は x に反比例し、x ＝ 2 のとき y ＝ 6。x ＝ −3 のときの y の値","-4","y=-4"],
+    ["2点 (1, 3)、(3, 7) を通る直線の式","y=2x+1"],
+    ["直線 y ＝ 3x − 2 に平行で、点 (2, 1) を通る直線の式","y=3x-5"],
+    ["関数 y ＝ x² で、x が 1 から 3 まで増加するときの変化の割合","4"],
+    ["関数 y ＝ ax² のグラフが点 (2, −12) を通るとき、a の値","-3","a=-3"],
+    ["関数 y ＝ 2x² で、x の変域が −1 ≦ x ≦ 3 のときの y の変域","0≦y≦18"],
+    ["直線 y ＝ −x ＋ 6 と x 軸との交点の x 座標","6","x=6"],
+    ["2直線 y ＝ 2x − 1 と y ＝ −x ＋ 5 の交点の座標","(2, 3)"],
+    ["関数 y ＝ ½x² で、x ＝ −4 のときの y の値","8","y=8"]
+  ]},
+  { name:"図形", rule:"数値が正しければ正解。単位はなくても数値が正しければ正解とする。πを含む答えはπを使った形で正しいこと（3.14で近似したものは不正解）。", qs:[
+    ["正八角形の1つの内角の大きさ","135°","135"],
+    ["内角の和が 1440° になる多角形は何角形か","十角形","10角形"],
+    ["半径 6cm の円の面積","36π cm²","36π"],
+    ["半径 6cm、中心角 60° のおうぎ形の弧の長さ","2π cm","2π"],
+    ["直角をはさむ2辺が 5cm、12cm の直角三角形の斜辺の長さ","13cm","13"],
+    ["1辺 6cm の正三角形の高さ","3√3 cm","3√3"],
+    ["半径 3cm の球の体積","36π cm³","36π"],
+    ["底面の半径 4cm、高さ 6cm の円錐の体積","32π cm³","32π"],
+    ["相似比が 2：3 の2つの三角形の面積比","4:9"],
+    ["円で、弧ABに対する中心角が 110° のとき、弧ABに対する円周角の大きさ","55°","55"]
+  ]},
+  { name:"確率・データ・数の性質", rule:"数値が正しければ正解。確率は約分された分数であること（約分していないものは不正解）。単位・「通り」「個」の有無は問わない。", qs:[
+    ["大小2つのさいころを投げるとき、出る目の和が 7 になる確率","1/6"],
+    ["3枚の硬貨を同時に投げるとき、少なくとも1枚が表になる確率","7/8"],
+    ["1, 2, 3, 4 の4枚のカードから2枚を並べてできる2けたの整数は何通り","12通り","12"],
+    ["5人の中から2人の代表を選ぶ選び方は何通り","10通り","10"],
+    ["データ 3, 5, 7, 8, 10, 12 の中央値","7.5"],
+    ["データ 2, 4, 4, 5, 9 の範囲","7"],
+    ["√(12n) が自然数となる最小の自然数 n","3","n=3"],
+    ["3 ＜ √a ＜ 4 を満たす自然数 a は何個","6個","6"],
+    ["連続する3つの整数の和が 57 のとき、最も小さい整数","18"],
+    ["データ 1, 3, 4, 6, 7, 9, 10, 12 の第1四分位数","3.5"]
+  ]}
+]},
+{ id:"eigo", name:"英語", color:"var(--eigo)", sets:[
+  { name:"英単語（日本語→英語）", mode:"exact", hint:"英単語", rule:"英単語のつづりが完全に正しければ正解。大文字・小文字の違いは問わない（曜日・月は頭文字が小文字でも正解とする）。1文字でもつづりが違えば不正解。", qs:[
+    ["「図書館」を英語で","library"],
+    ["「水曜日」を英語で","Wednesday"],
+    ["「2月」を英語で","February"],
+    ["「天気」を英語で","weather"],
+    ["「病院」を英語で","hospital"],
+    ["「経験」を英語で","experience"],
+    ["「環境」を英語で","environment"],
+    ["「重要な」を英語で","important"],
+    ["「違い」を英語で","difference"],
+    ["「理解する」を英語で","understand"]
+  ]},
+  { name:"語形変化", mode:"exact", hint:"英単語", rule:"指定された形の英単語のつづりが完全に正しければ正解。大文字・小文字は問わない。", qs:[
+    ["run の過去形","ran"],
+    ["write の過去分詞","written"],
+    ["buy の過去形","bought"],
+    ["big の比較級","bigger"],
+    ["good の最上級","best"],
+    ["child の複数形","children"],
+    ["swim の -ing形","swimming"],
+    ["teach の過去形","taught"],
+    ["knife の複数形","knives"],
+    ["speak の過去分詞","spoken"]
+  ]},
+  { name:"空所補充（1語）", mode:"exact", hint:"英単語", rule:"（　）に入る英単語1語のつづりが正しければ正解。大文字・小文字は問わない。", qs:[
+    ["I have lived here (　　) 2015.","since"],
+    ["She is good (　　) playing the piano.","at"],
+    ["This book was written (　　) Soseki.","by"],
+    ["I'm looking forward (　　) seeing you.","to"],
+    ["(　　) you ever been to Kyoto?","Have"],
+    ["If I (　　) a bird, I could fly to you.","were"],
+    ["He is the boy (　　) father is a doctor.","whose"],
+    ["Tom is taller (　　) Ken.","than"],
+    ["Please take care (　　) your dog.","of"],
+    ["I don't know what (　　) do.","to"]
+  ]},
+  { name:"書きかえ（1語）", mode:"exact", hint:"英単語", rule:"2文がほぼ同じ意味になるよう（　）に入る1語。つづりが正しければ正解。大文字・小文字は問わない。", qs:[
+    ["He can swim fast.<br>＝ He is able (　　) swim fast.","to"],
+    ["Let's play tennis.<br>＝ (　　) we play tennis?","Shall"],
+    ["I have no money.<br>＝ I don't have (　　) money.","any"],
+    ["Ken is older than Mike.<br>＝ Mike is (　　) than Ken.","younger"],
+    ["This is my bag.<br>＝ This bag is (　　).","mine"],
+    ["Be quiet in the library.<br>＝ You (　　) be quiet in the library.","must","should"],
+    ["He went to Tokyo, and he is not here now.<br>＝ He has (　　) to Tokyo.","gone"],
+    ["I was very busy, so I couldn't call you.<br>＝ I was (　　) busy to call you.","too"],
+    ["Do you know the girl who is singing a song?<br>＝ Do you know the girl (　　) a song?","singing"],
+    ["Look at the house which has a red roof.<br>＝ Look at the house (　　) a red roof.","with"]
+  ]},
+  { name:"定義・会話表現", mode:"exact", hint:"英単語", rule:"英単語1語のつづりが正しければ正解。大文字・小文字は問わない。", qs:[
+    ["the first month of the year","January"],
+    ["the day after Friday","Saturday"],
+    ["a person who teaches students at school","teacher"],
+    ["a room where people cook food","kitchen"],
+    ["the season between spring and fall","summer"],
+    ["A: How (　　) is this pen?　B: It's 200 yen.","much"],
+    ["A: (　　) is your birthday?　B: It's May 5.","When"],
+    ["A: Thank you very much.　B: You're (　　).","welcome"],
+    ["（受付で）May I (　　) your name, please?","have"],
+    ["A: (　　) don't we go shopping?　B: Sounds good.","Why"]
+  ]}
+]},
+{ id:"shakai", name:"社会", color:"var(--shakai)", sets:[
+  { name:"日本の地理", rule:"用語が正しければ正解。漢字の軽い誤りは、別の語と誤解されない程度なら正解。ひらがな・カタカナでも語として正しければ正解。", qs:[
+    ["日本の最北端の島","択捉島","えとろふ島"],
+    ["香川県の県庁所在地","高松市","高松"],
+    ["日本で最も長い川","信濃川"],
+    ["降水量が少ない讃岐平野で、農業用水を確保するために多く造られたもの","ため池"],
+    ["東北地方の太平洋側に夏に吹く、冷たく湿った北東の風","やませ"],
+    ["2万5千分の1の地形図で、地図上 4cm の実際の距離","1km","1000m"],
+    ["工業製品出荷額が日本で最も多い工業地帯","中京工業地帯","中京"],
+    ["三陸海岸南部などに見られる、入り江と岬が入り組んだ海岸","リアス海岸","リアス式海岸"],
+    ["本州四国連絡橋のうち、香川県と岡山県を結ぶ橋","瀬戸大橋"],
+    ["日本の標準時子午線の経度","東経135度","135度"]
+  ]},
+  { name:"世界の地理", rule:"用語が正しければ正解。カタカナ語は多少の表記ゆれを許容。", qs:[
+    ["世界で最も面積が大きい大洋","太平洋"],
+    ["本初子午線が通る旧グリニッジ天文台がある都市","ロンドン"],
+    ["世界で最も長い川","ナイル川"],
+    ["EU（ヨーロッパ連合）の多くの国で使われている共通通貨","ユーロ"],
+    ["東南アジア諸国連合の略称（アルファベット）","ASEAN"],
+    ["アメリカ合衆国の北緯37度付近から南に広がる、工業が発達した地域","サンベルト"],
+    ["南アメリカ州で主にポルトガル語が話される国","ブラジル"],
+    ["中国が外国の資本や技術を導入するために沿岸部に設けた地域","経済特区"],
+    ["赤道付近に広がる、一年中気温が高く降水量が多い気候帯","熱帯"],
+    ["オーストラリアの先住民","アボリジニ","アボリジナルピープル"]
+  ]},
+  { name:"歴史（古代〜中世）", rule:"用語・人名が正しければ正解。人名・用語の漢字の軽い誤りは、別の語と誤解されない程度なら正解。", qs:[
+    ["3世紀、魏に使いを送った邪馬台国の女王","卑弥呼"],
+    ["聖徳太子が定めた、役人の心構えを示したきまり","十七条の憲法","十七条憲法"],
+    ["645年、中大兄皇子らが始めた政治改革","大化の改新"],
+    ["743年、新しく開墾した土地の永久私有を認めた法","墾田永年私財法"],
+    ["藤原氏が摂政・関白となって行った政治","摂関政治"],
+    ["1192年に征夷大将軍に任じられた人物","源頼朝"],
+    ["元寇のときの鎌倉幕府の執権","北条時宗"],
+    ["1232年、北条泰時が定めた武家の法","御成敗式目","貞永式目"],
+    ["金閣を建てた室町幕府3代将軍","足利義満"],
+    ["1467年に始まり、11年間続いた戦乱","応仁の乱"]
+  ]},
+  { name:"歴史（近世〜近代）", rule:"用語・人名が正しければ正解。漢字の軽い誤りは、別の語と誤解されない程度なら正解。", qs:[
+    ["織田信長が安土の城下で、市の税を免除し座の特権をなくした政策","楽市・楽座","楽市楽座"],
+    ["豊臣秀吉が全国の田畑の面積や収穫量を調べた政策","太閤検地"],
+    ["江戸幕府が大名を統制するために定めた法","武家諸法度"],
+    ["徳川家光が制度化した、大名が1年おきに江戸と領地を行き来する制度","参勤交代"],
+    ["8代将軍徳川吉宗が行った改革","享保の改革"],
+    ["1854年、江戸幕府がアメリカと結び、下田・函館を開いた条約","日米和親条約"],
+    ["1867年、徳川慶喜が政権を朝廷に返したこと","大政奉還"],
+    ["1873年、地価の3%を現金で納めさせることにした改革","地租改正"],
+    ["1889年に発布された、天皇が国民に与える形の憲法","大日本帝国憲法"],
+    ["1894年、朝鮮をめぐって日本と清との間で起こった戦争","日清戦争"]
+  ]},
+  { name:"公民", rule:"用語・数値が正しければ正解。カタカナ語の表記ゆれは許容。", qs:[
+    ["日本国憲法の三大原則のうち、国の政治のあり方を最終的に決める力が国民にあること","国民主権"],
+    ["衆議院議員の任期は何年","4年","4"],
+    ["日本国憲法で「国の唯一の立法機関」と定められている機関","国会"],
+    ["内閣が国会の信任にもとづいて成立し、国会に対して連帯責任を負うしくみ","議院内閣制"],
+    ["1つの事件について原則3回まで裁判を受けられる制度","三審制"],
+    ["住民が首長や議員の解職を求めること（カタカナで）","リコール"],
+    ["物価が継続的に上がり続ける現象","インフレーション","インフレ"],
+    ["日本の中央銀行","日本銀行","日銀"],
+    ["訪問販売などで、一定期間内なら無条件で契約を解除できる制度","クーリング・オフ","クーリングオフ"],
+    ["国連安全保障理事会の常任理事国が持つ、1国でも反対すると決定できない権利","拒否権"]
+  ]}
+]},
+{ id:"rika", name:"理科", color:"var(--rika)", sets:[
+  { name:"物理", rule:"用語・数値が正しければ正解。単位がなくても数値が正しければ正解。", qs:[
+    ["電圧 3V をかけると 0.5A の電流が流れる抵抗の大きさ","6Ω","6"],
+    ["100V の電圧で 2A の電流が流れる電気器具の電力","200W","200"],
+    ["物体に力がはたらかないとき、静止または等速直線運動を続ける性質","慣性"],
+    ["光が異なる物質の境界面で折れ曲がって進む現象","屈折"],
+    ["振動数を表す単位（カタカナまたは記号）","ヘルツ","Hz"],
+    ["質量 600g の物体にはたらく重力の大きさ（100gの物体にはたらく重力を1Nとする）","6N","6"],
+    ["1N の力で物体を力の向きに 2m 動かしたときの仕事","2J","2"],
+    ["コイルの中の磁界が変化すると、コイルに電流が流れる現象","電磁誘導"],
+    ["50N の力が 2m² の面に垂直にはたらくときの圧力","25Pa","25"],
+    ["位置エネルギーと運動エネルギーの和","力学的エネルギー"]
+  ]},
+  { name:"化学", rule:"用語・化学式・数値が正しければ正解。化学式は数字の位置（右下）まで正しいこと（H2O のように同じ大きさで書いても正解とする）。", qs:[
+    ["水を電気分解したとき、陰極に発生する気体","水素","H2"],
+    ["炭酸水素ナトリウムを加熱したときに発生する気体","二酸化炭素","CO2"],
+    ["物質が酸素と結びつく化学変化","酸化"],
+    ["酸化物から酸素がうばわれる化学変化","還元"],
+    ["塩化ナトリウムの化学式","NaCl"],
+    ["水の化学式","H₂O","H2O"],
+    ["酸性の水溶液に BTB 溶液を加えたときの色","黄色","黄"],
+    ["酸とアルカリが互いの性質を打ち消し合う反応","中和"],
+    ["水 100g に食塩 25g をとかした食塩水の質量パーセント濃度","20%","20"],
+    ["原子が電子を失ったり受け取ったりして電気を帯びたもの","イオン"]
+  ]},
+  { name:"生物", rule:"用語が正しければ正解。ひらがな・カタカナでも語として正しければ正解。", qs:[
+    ["植物の細胞で光合成が行われる部分","葉緑体"],
+    ["葉の表皮にある、2つの孔辺細胞に囲まれたすき間","気孔"],
+    ["遺伝子の本体である物質（アルファベット3文字）","DNA","デオキシリボ核酸"],
+    ["だ液に含まれ、デンプンを分解する消化酵素","アミラーゼ"],
+    ["血液の成分のうち、酸素を運ぶもの","赤血球"],
+    ["小腸の内側のひだの表面にある小さな突起","柔毛","じゅう毛"],
+    ["背骨をもつ動物のなかま","脊椎動物","セキツイ動物"],
+    ["被子植物のうち、子葉が1枚のなかま","単子葉類"],
+    ["刺激に対して無意識に起こる反応","反射"],
+    ["生殖細胞がつくられるときの、染色体の数が半分になる細胞分裂","減数分裂"]
+  ]},
+  { name:"地学", rule:"用語が正しければ正解。ひらがな・カタカナでも語として正しければ正解。", qs:[
+    ["地震そのものの規模（エネルギーの大きさ）を表す値","マグニチュード"],
+    ["ある地点での地震のゆれの程度","震度"],
+    ["火山灰などが堆積して固まってできた岩石","凝灰岩"],
+    ["マグマが地表や地表付近で急に冷えて固まった火成岩","火山岩"],
+    ["空気中の水蒸気が冷やされて水滴に変わり始めるときの温度","露点"],
+    ["寒冷前線が温暖前線に追いついてできる前線","閉塞前線"],
+    ["日本の冬に典型的な気圧配置","西高東低"],
+    ["太陽の表面に見える、周りより温度が低く黒く見える部分","黒点"],
+    ["地球が地軸を中心に1日に1回転すること","自転"],
+    ["夕方、西の空に見える金星の呼び名","よいの明星","宵の明星"]
+  ]},
+  { name:"計算・応用", rule:"数値・比が正しければ正解。単位がなくても数値が正しければ正解。比は最も簡単な整数比であること。", qs:[
+    ["10Ω と 20Ω の抵抗を直列につないだときの全体の抵抗","30Ω","30"],
+    ["6Ω と 3Ω の抵抗を並列につないだときの全体の抵抗","2Ω","2"],
+    ["物体が 4 秒間に 20m 進んだときの平均の速さ","5m/s","5"],
+    ["質量 54g、体積 20cm³ の物質の密度","2.7g/cm³","2.7"],
+    ["銅 0.8g を十分に加熱すると酸化銅が 1.0g できた。結びついた酸素の質量","0.2g","0.2"],
+    ["マグネシウムと酸素は 3：2 の質量比で結びつく。マグネシウム 1.2g と結びつく酸素の質量","0.8g","0.8"],
+    ["気温 20℃（飽和水蒸気量 17.3g/m³）の空気 1m³ に水蒸気が 8.65g 含まれているときの湿度","50%","50"],
+    ["P波の速さを 6km/s とすると、震源から 60km の地点に P波が届くまでの時間","10秒","10"],
+    ["60W の電球を 2 時間使ったときの電力量（Wh）","120Wh","120"],
+    ["丸の種子(AA)としわの種子(aa)をかけ合わせてできた子どうしをかけ合わせたとき、孫の丸：しわ の比","3:1"]
+  ]}
+]}
+];
+
+/* ============================================================
+   保存データ
+   ============================================================ */
+const STORE_KEY = "kijutsu250_v1";
+let store = { key:"", modelRead:"gemini-flash-latest", modelJudge:"gemini-flash-lite-latest", penOnly:false, best:{} };
+function load(){ try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)||"null"); if(s) store = Object.assign(store,s); }catch(e){} }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
+load();
+
+/* ============================================================
+   ホーム
+   ============================================================ */
+function renderHome(){
+  const g = document.getElementById("subjGrid"); g.innerHTML = "";
+  let grand = 0;
+  SUBJECTS.forEach((s,si)=>{
+    const b = store.best[s.id]||{};
+    let sum = 0; s.sets.forEach((_,i)=>{ if(b[i]!=null) sum+=b[i]; });
+    grand += sum;
+    const d = document.createElement("div"); d.className="subj"; d.style.setProperty("--c",s.color);
+    d.innerHTML = `<h2>${s.name}<span><b>${sum}</b> / 50点</span></h2><div class="sets"></div>`;
+    const sets = d.querySelector(".sets");
+    s.sets.forEach((st,i)=>{
+      const sc = b[i];
+      const bt = document.createElement("button");
+      bt.className = "setbtn"+(sc!=null?" done":"");
+      bt.innerHTML = `第${i+1}回<small>${st.name}</small><span class="sc">${sc!=null?sc+"/10":"—"}</span>`;
+      bt.onclick = ()=>startSet(si,i);
+      sets.appendChild(bt);
+    });
+    g.appendChild(d);
+  });
+  document.getElementById("grand").textContent = grand;
+  document.getElementById("modeNote").innerHTML = store.key
+    ? "採点モード：<b>AI採点</b>（手書きをAIが読み取って判定。誤読のときは判定を修正できます）"
+    : "採点モード：<b>自己採点</b>（⚙設定でGemini APIキーを入れるとAI採点になります）";
+}
+
+/* ============================================================
+   出題
+   ============================================================ */
+let cur = null;
+function show(id){ ["home","quiz","result"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+function startSet(si,i){
+  const s = SUBJECTS[si], st = s.sets[i];
+  cur = { subj:si, set:i, idx:0, answers:[] };
+  document.getElementById("quiz").style.setProperty("--c",s.color);
+  document.getElementById("qTag").textContent = s.name;
+  show("quiz"); resizePad(); renderQ();
+}
+function renderQ(){
+  const s = SUBJECTS[cur.subj], st = s.sets[cur.set], q = st.qs[cur.idx];
+  document.getElementById("qSetName").textContent = `第${cur.set+1}回　${st.name}`;
+  document.getElementById("qText").innerHTML = `<span style="color:var(--c)">問${cur.idx+1}</span>　${q[0]}`;
+  document.getElementById("qCount").textContent = `${cur.idx+1} / 10`;
+  document.getElementById("qProg").style.width = (cur.idx*10)+"%";
+  document.getElementById("resBox").innerHTML = "";
+  document.getElementById("tools").classList.remove("hidden");
+  document.getElementById("padWrap").classList.remove("locked");
+  locked = false; clearPad();
+  const gb = document.getElementById("gradeBtn"); gb.disabled=false; gb.textContent="答え合わせ";
+}
+function quitQuiz(){ if(confirm("このセットを中断してホームに戻りますか？")) goHome(); }
+function goHome(){ show("home"); renderHome(); }
+
+/* ============================================================
+   手書きパッド
+   ============================================================ */
+const pad = document.getElementById("pad"), ctx = pad.getContext("2d");
+let strokes = [], curStroke = null, locked = false, activePointer = null;
+function resizePad(){
+  const r = pad.getBoundingClientRect(), dpr = window.devicePixelRatio||1;
+  pad.width = Math.round(r.width*dpr); pad.height = Math.round(r.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0); redraw();
+}
+window.addEventListener("resize",()=>{ if(!document.getElementById("quiz").classList.contains("hidden")) resizePad(); });
+function pt(e){ const r = pad.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top, p:(e.pointerType==="pen"&&e.pressure>0)?e.pressure:0.5}; }
+function drawSeg(a,b){
+  ctx.strokeStyle="#111"; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.lineWidth = 2 + b.p*3.2;
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+}
+function drawStroke(s){
+  if(s.length===1){ ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(s[0].x,s[0].y,2.5,0,7); ctx.fill(); return; }
+  for(let i=1;i<s.length;i++) drawSeg(s[i-1],s[i]);
+}
+function redraw(){ const r = pad.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height); strokes.forEach(drawStroke); updateHint(); }
+function updateHint(){ document.getElementById("padHint").style.display = strokes.length?"none":"block"; }
+pad.addEventListener("pointerdown",e=>{
+  if(locked) return;
+  if(store.penOnly && e.pointerType==="touch") return;
+  if(activePointer!==null) return;
+  activePointer = e.pointerId; pad.setPointerCapture(e.pointerId);
+  curStroke = [pt(e)]; strokes.push(curStroke); drawStroke(curStroke); updateHint();
+  e.preventDefault();
+});
+pad.addEventListener("pointermove",e=>{
+  if(e.pointerId!==activePointer || !curStroke) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  evs.forEach(ev=>{ const p = pt(ev), last = curStroke[curStroke.length-1]; curStroke.push(p); drawSeg(last,p); });
+  e.preventDefault();
+});
+function endStroke(e){ if(e.pointerId!==activePointer) return; activePointer=null; curStroke=null; }
+pad.addEventListener("pointerup",endStroke);
+pad.addEventListener("pointercancel",endStroke);
+function undo(){ if(locked) return; strokes.pop(); redraw(); }
+function clearPad(){ if(locked) return; strokes=[]; redraw(); }
+
+/* 書いた部分だけを白背景で切り出して画像化 */
+function exportImage(){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  strokes.forEach(s=>s.forEach(p=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}));
+  const m=20; minX-=m;minY-=m;maxX+=m;maxY+=m;
+  const w=maxX-minX, h=maxY-minY;
+  // 長辺768px以内に縮小（画像トークンを最小単位に抑える）
+  const scale = Math.min(1.5, 768/Math.max(w,h));
+  const c = document.createElement("canvas"); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
+  const x = c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+  x.setTransform(scale,0,0,scale,-minX*scale,-minY*scale);
+  x.strokeStyle="#000"; x.fillStyle="#000"; x.lineCap="round"; x.lineJoin="round";
+  strokes.forEach(s=>{
+    if(s.length===1){ x.beginPath(); x.arc(s[0].x,s[0].y,2.5,0,7); x.fill(); return; }
+    for(let i=1;i<s.length;i++){ x.lineWidth=2+s[i].p*3.2; x.beginPath(); x.moveTo(s[i-1].x,s[i-1].y); x.lineTo(s[i].x,s[i].y); x.stroke(); }
+  });
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+/* ============================================================
+   採点
+   ============================================================ */
+function stripTags(h){ const d=document.createElement("div"); d.innerHTML=h.replace(/<br>/g," / "); return d.textContent; }
+async function grade(){
+  if(!strokes.length){ alert("答えを書いてから答え合わせをしてください。"); return; }
+  const s = SUBJECTS[cur.subj], st = s.sets[cur.set], q = st.qs[cur.idx];
+  const img = exportImage();
+  locked = true; document.getElementById("padWrap").classList.add("locked");
+  const gb = document.getElementById("gradeBtn"); gb.disabled = true;
+  const rec = { q:q[0], answer:q[1], img, read:"", correct:null, comment:"", ai:false };
+  cur.answers[cur.idx] = rec;
+
+  if(store.key){
+    gb.innerHTML = '<span class="spinner"></span>採点中…';
+    try{
+      const r = await aiGrade(s, st, q, img);
+      rec.read = r.read||""; rec.correct = !!r.correct; rec.comment = r.comment||""; rec.ai = true;
+    }catch(err){
+      rec.comment = "AI採点に失敗しました（"+err.message+"）。自己採点してください。";
+    }
+  }
+  document.getElementById("tools").classList.add("hidden");
+  renderResult(rec);
+}
+/* Gemini呼び出し共通 */
+async function callGemini(model, prompt, img, maxTok){
+  const body = {
+    contents:[{ parts:[ {text:prompt}, {inline_data:{mime_type:"image/jpeg", data:img.split(",")[1]}} ] }],
+    generationConfig:{ temperature:0, responseMimeType:"application/json", maxOutputTokens:maxTok,
+      thinkingConfig:{ thinkingLevel:"minimal" } }
+  };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const call = b => fetch(url,{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":store.key}, body:JSON.stringify(b) });
+  let res = await call(body);
+  if(res.status===400){
+    delete body.generationConfig.thinkingConfig; body.generationConfig.maxOutputTokens = 1024;
+    res = await call(body);
+  }
+  if(!res.ok){ let m="HTTP "+res.status; try{ const j=await res.json(); m=j.error?.message?.slice(0,80)||m; }catch(e){} throw new Error(m); }
+  const j = await res.json();
+  const t = j.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"";
+  const mm = t.match(/\{[\s\S]*\}/); if(!mm) throw new Error("応答を読み取れません");
+  return JSON.parse(mm[0]);
+}
+
+/* 照合用の正規化（全角英数→半角、空白・句読点除去、英字は小文字） */
+function norm(x){
+  return String(x||"").normalize("NFKC").replace(/[\s　.,。、・「」『』"'’]/g,"").toLowerCase();
+}
+/* 完全一致判定：送り仮名つきで書いた場合も許可（例：険＋しい） */
+function exactMatch(read, q){
+  const r = norm(read); if(!r || r.includes("?")||r.includes("？")) return false;
+  const after = norm(stripTags((q[0].split("</em>")[1])||""));
+  return q.slice(1).some(a=>{
+    const n = norm(a);
+    if(r===n) return true;
+    return r.startsWith(n) && after.startsWith(r.slice(n.length)) && /^[ぁ-ゟ]+$/.test(r.slice(n.length));
+  });
+}
+
+async function aiGrade(s, st, q, img){
+  /* ① 漢字・英単語：正解を見せずに書き起こし → プログラムで1文字ずつ照合 */
+  if(st.mode==="exact"){
+    const model = (store.modelRead||"gemini-flash-latest").trim();
+    const prompt =
+`手書き文字を一字一句そのまま書き起こす。誤字・脱字・つづり誤りも直さず、推測で補わない。読めない字は?。
+文字種:${st.hint}
+JSONのみ:{"read":"書き起こし","unclear":true/false}`;
+    const r = await callGemini(model, prompt, img, 120);
+    const ok = exactMatch(r.read, q);
+    return { read:r.read, correct:ok,
+      comment: (r.unclear ? "読み取りに自信がありません。判定を確認してください。" : (ok ? "正解！" : `正しくは「${q[1]}」`)) };
+  }
+  /* ② 数式・用語：正解を渡して意味で判定 */
+  const model = (store.modelJudge||"gemini-flash-lite-latest").trim();
+  // コスト削減：指示文を最小限にし、返答も短く固定
+  const prompt =
+`中3の手書き解答を採点。画像の文字を推測せず読み取り、基準に従い判定。
+問題:${stripTags(q[0])}
+正解:${q.slice(1).join("／")}
+基準:${st.rule}
+JSONのみ:{"read":"読取","correct":true/false,"comment":"20字以内"}`;
+  return await callGemini(model, prompt, img, 200);
+}
+function renderResult(rec){
+  const box = document.getElementById("resBox");
+  const isLast = cur.idx===9;
+  const nextLabel = isLast ? "結果を見る" : "次の問題へ →";
+  if(rec.correct===null){
+    box.innerHTML = `<div class="res">
+      <div class="row"><b>正解</b><span style="font-size:22px;font-weight:700">${rec.answer}</span></div>
+      ${rec.comment?`<div class="cmt">${rec.comment}</div>`:""}
+      <div class="cmt">自分の答えと比べて、○か×を選んでください。</div>
+      <div class="fix"><button class="btn ok" onclick="selfMark(true)">○ 正解だった</button><button class="btn ng" onclick="selfMark(false)">× まちがえた</button></div>
+    </div>`;
+    return;
+  }
+  box.innerHTML = `<div class="res ${rec.correct?"ok":"ng"}">
+    <div><span class="mark">${rec.correct?"○":"×"}</span><span style="font-weight:700">${rec.correct?"正解！":"不正解"}</span></div>
+    <div class="row"><b>読み取り</b>${esc(rec.read)||"（読み取れず）"}</div>
+    <div class="row"><b>正解</b><span style="font-weight:700">${rec.answer}</span></div>
+    ${rec.comment?`<div class="cmt">${esc(rec.comment)}</div>`:""}
+    <div class="fix">
+      <button class="btn primary" onclick="nextQ()">${nextLabel}</button>
+      <button class="btn" onclick="flipMark()">${rec.correct?"読み間違い：×にする":"読み間違い：○にする"}</button>
+    </div>
+  </div>`;
+}
+function esc(s){ return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function selfMark(ok){ const r=cur.answers[cur.idx]; r.correct=ok; r.read=r.read||"（自己採点）"; nextQ(); }
+function flipMark(){ const r=cur.answers[cur.idx]; r.correct=!r.correct; r.comment="（判定を手動で修正）"; renderResult(r); }
+function nextQ(){
+  if(cur.idx<9){ cur.idx++; renderQ(); }
+  else finishSet();
+}
+
+/* ============================================================
+   結果
+   ============================================================ */
+function finishSet(){
+  const s = SUBJECTS[cur.subj], st = s.sets[cur.set];
+  const score = cur.answers.filter(a=>a&&a.correct).length;
+  store.best[s.id] = store.best[s.id]||{};
+  const prev = store.best[s.id][cur.set];
+  const isNew = prev==null || score>prev;
+  if(isNew) store.best[s.id][cur.set] = score;
+  save();
+  const r = document.getElementById("result"); r.style.setProperty("--c",s.color);
+  document.getElementById("rTitle").textContent = `${s.name}　第${cur.set+1}回　${st.name}`;
+  document.getElementById("rScore").innerHTML = `${score}<small> / 10点</small>`;
+  document.getElementById("rBest").textContent = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
+  document.getElementById("rBody").innerHTML = cur.answers.map((a,i)=>`<tr>
+    <td class="${a.correct?"m-ok":"m-ng"}">${a.correct?"○":"×"}</td>
+    <td>問${i+1}　${a.q}</td>
+    <td><img src="${a.img}" alt=""><div style="font-size:13px;color:var(--sub)">${esc(a.read)}</div></td>
+    <td style="font-weight:700">${a.answer}</td></tr>`).join("");
+  show("result");
+}
+
+/* ============================================================
+   設定
+   ============================================================ */
+function openSettings(){
+  document.getElementById("sKey").value = store.key||"";
+  document.getElementById("sModelRead").value = store.modelRead||"gemini-flash-latest";
+  document.getElementById("sModelJudge").value = store.modelJudge||"gemini-flash-lite-latest";
+  document.getElementById("sPen").checked = !!store.penOnly;
+  document.getElementById("settings").classList.remove("hidden");
+}
+function closeSettings(){ document.getElementById("settings").classList.add("hidden"); }
+function saveSettings(){
+  store.key = document.getElementById("sKey").value.trim();
+  store.modelRead = document.getElementById("sModelRead").value.trim()||"gemini-flash-latest";
+  store.modelJudge = document.getElementById("sModelJudge").value.trim()||"gemini-flash-lite-latest";
+  store.penOnly = document.getElementById("sPen").checked;
+  save(); closeSettings(); renderHome();
+}
+function resetScores(){ if(confirm("すべての成績を消去しますか？")){ store.best={}; save(); renderHome(); } }
+
+renderHome();
+</script>
+</body>
+</html>
