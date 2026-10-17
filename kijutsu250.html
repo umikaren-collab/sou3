@@ -129,6 +129,17 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 .ebox{background:var(--card);border-radius:14px;padding:16px 18px;margin-top:14px;border-left:8px solid var(--accent)}
 .ectl{display:flex;gap:8px;flex-wrap:wrap}
 .etext{margin-top:12px;font-size:18px;line-height:1.9;white-space:pre-wrap}
+.lcards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px}
+.lcard{background:var(--card);border-radius:12px;padding:12px 14px;border:2px solid var(--line)}
+.lcard small{display:block;font-size:12px;color:var(--sub)}
+.lcard b{font-size:22px}
+.lh{margin:22px 0 8px;font-size:17px}
+.ltab td,.ltab th{text-align:center;padding:8px 6px}
+.ltab td:last-child,.ltab th:last-child{text-align:left}
+.ltab td.good{color:var(--ok);font-weight:800}.ltab td.bad{color:var(--ng);font-weight:800}
+.ldet{margin-top:6px}.ldet summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:14px}
+.ldet .etext{font-size:15px;line-height:1.8;margin:6px 0}
+@media (max-width:640px){.lcards{grid-template-columns:1fr 1fr}.ltab{font-size:13px}}
 @media (max-width:640px){.mc{grid-template-columns:1fr}.step .lb{min-width:0}}
 @media (max-width:640px){.tlist{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:640px){.qtext{font-size:19px}canvas#pad{height:260px}}
@@ -143,7 +154,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
       <h1>手書き一問一答　入試350</h1>
       <div class="total">合計（各セットの最高点）<b id="grand">0</b> / 350点</div>
     </div>
-    <button class="btn" onclick="openSettings()">⚙ 設定</button>
+    <div style="display:flex;gap:8px"><button class="btn" onclick="openLog()">📖 記録</button><button class="btn" onclick="openSettings()">⚙ 設定</button></div>
   </header>
   <div id="today"></div>
   <div class="grid" id="subjGrid"></div>
@@ -209,6 +220,15 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
   <div id="eNext"></div>
 </div>
 
+<!-- ===== LOG ===== -->
+<div id="logv" class="wrap hidden">
+  <header>
+    <h1>学習の記録</h1>
+    <button class="btn" onclick="goHome()">ホームへ</button>
+  </header>
+  <div id="logBody"></div>
+</div>
+
 <!-- ===== SETTINGS ===== -->
 <div class="modal hidden" id="settings">
   <div class="mbox">
@@ -259,6 +279,14 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
     <p>若い女性の自然な声（Nanami）は、Microsoft Edgeで開くと使えます。Chromeでは「Google 日本語」が女性の声です。</p>
     <div class="chk"><input type="checkbox" id="sPen"><span>ペンのみで書く（手のひら・指のタッチを無視）</span></div>
     <p>APIキーはこの端末のブラウザ内にだけ保存され、HTMLファイルには含まれません。</p>
+    <label>記録の送信先（Google Apps Script のウェブアプリURL）
+      <input type="text" id="sSync" placeholder="https://script.google.com/macros/s/..../exec">
+    </label>
+    <label>合言葉（スクリプトに設定した場合のみ）
+      <input type="text" id="sSyncToken" placeholder="空欄でも可">
+    </label>
+    <div style="margin-top:8px"><button class="btn" onclick="testSync()">📤 テスト送信</button></div>
+    <p>URLを入れると、毎日の点数・時間・まちがえた単元・評価が保護者のスプレッドシートに自動で送られます。</p>
     <div class="acts">
       <button class="btn" onclick="resetPlan()">1日目からやり直す</button>
       <button class="btn" onclick="resetScores()">成績をリセット</button>
@@ -895,7 +923,7 @@ function renderHome(){
    cur.kind：set＝第◯回／mix＝今日の10問／warm＝ウォームアップ／review＝弱点補強2回目
    ============================================================ */
 let cur = null;
-function show(id){ stopSpeak(); ["home","quiz","result","evalv"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+function show(id){ stopSpeak(); ["home","quiz","result","evalv","logv"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
 function curSubj(){ return SUBJECTS[cur.subj]; }
 function isMulti(){ return cur.kind==="warm" || cur.kind==="review" || cur.kind==="week"; }
 
@@ -905,7 +933,7 @@ function startSet(si,i,daily){
 }
 function startSession(o){
   cancelAuto();
-  cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily };
+  cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily, t0:Date.now() };
   timerReset(isMulti() ? 0 : itemsLimit(o.items));
   const color = o.si>=0 ? SUBJECTS[o.si].color : "var(--accent)";
   document.getElementById("quiz").style.setProperty("--c",color);
@@ -1188,6 +1216,7 @@ function finishSet(){
     st.n++; if(!a.correct) st.w++; st.ok = !!a.correct; st.last = t;
     store.qstat[it.key] = st;
   });
+  addStudy(Date.now()-cur.t0);
   if(isMulti()) return finishReview();
 
   const s = curSubj();
@@ -1206,7 +1235,7 @@ function finishSet(){
       wrong: cur.items.filter((it,i)=>!cur.answers[i].correct).map(it=>it.key), kind:cur.kind, set:cur.set };
     cur.daily = false;
   }
-  save();
+  save(); syncDay();
   document.getElementById("rTitle").textContent = `${s.name}　${setTitle()}`;
   document.getElementById("rScore").innerHTML = `${score}<small> / 10点</small>`;
   if(T.limit){
@@ -1237,7 +1266,7 @@ function finishReview(){
     else { h.review = { w:[wr.length, okW], c:[mc.length, okC] }; p.review = "done"; }
     cur.daily = false;
   }
-  save();
+  save(); syncDay(); if(cur.kind==="week") syncWeek(weekOf(planState().day));
   if(cur.kind==="warm"){
     msg = okW===wr.length ? "前日までの弱点、全部クリア！ この調子で5教科へ。" : `${okW}問クリア。まだの問題は、また出題されます。次は5教科へ。`;
     document.getElementById("rScore").innerHTML = `${okW}<small> / ${wr.length}</small>`;
@@ -1349,7 +1378,7 @@ JSONのみ:{"text":"評価の文章"}`;
     }catch(e){ text = ""; }
   }
   if(!text) text = localEval(today, prev);
-  h.evalText = text; p.evald = "done"; save();
+  h.evalText = text; p.evald = "done"; save(); syncDay();
   if(document.getElementById("evalv").classList.contains("hidden")) return;
   box.textContent = text;
   speakEval();
@@ -1507,7 +1536,7 @@ JSONのみ:{"text":"評価の文章"}`;
     }catch(e){ text = ""; }
   }
   if(!text) text = localWeekEval(cs, ps);
-  h.weekText = text; p.weekEval = "done"; save();
+  h.weekText = text; p.weekEval = "done"; save(); syncWeek(weekOf(p.day));
   if(document.getElementById("evalv").classList.contains("hidden")) return;
   box.textContent = text; speakEval();
 }
@@ -1548,6 +1577,95 @@ function startWeekReview(){
 
 
 /* ============================================================
+   学習時間の記録
+   ============================================================ */
+function addStudy(ms){ if(!(ms>0)) return; const h = histToday(); h.sec = (h.sec||0) + Math.min(3600, Math.round(ms/1000)); save(); }
+
+/* ============================================================
+   記録ページ（保護者向け）
+   ============================================================ */
+function dayRow(date){
+  const h = store.hist[date]; if(!h) return null;
+  const sc = SUBJECTS.map(s=>h.subj&&h.subj[s.id] ? h.subj[s.id].score : null);
+  const total = sc.reduce((t,x)=>t+(x||0),0), n = sc.filter(x=>x!=null).length;
+  const units = [...new Set(Object.values(h.subj||{}).flatMap(x=>(x.wrong||[]).map(itemFromKey).filter(Boolean)
+    .map(it=>`${SUBJECTS[it.si].name}・${it.st.name}`)))];
+  return { date, day:h.day, sc, total, n, warm:h.warm, review:h.review, week:h.week, mins:Math.round((h.sec||0)/60),
+    units, evalText:h.evalText||"", weekText:h.weekText||"" };
+}
+function openLog(){
+  const dates = Object.keys(store.hist).filter(d=>Object.keys(store.hist[d].subj||{}).length).sort().reverse();
+  const rows = dates.map(dayRow);
+  // 連続日数
+  let streak = 0; { const d = new Date(); for(;;){ const k = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    if(store.hist[k] && Object.keys(store.hist[k].subj||{}).length){ streak++; d.setDate(d.getDate()-1); } else if(streak===0 && k===todayStr()){ d.setDate(d.getDate()-1); } else break; } }
+  const last7 = rows.slice(0,7).filter(r=>r.n===5);
+  const avg = last7.length ? Math.round(last7.reduce((t,r)=>t+r.total,0)/last7.length*10)/10 : null;
+  const mins7 = rows.slice(0,7).reduce((t,r)=>t+r.mins,0);
+  const weeks = [...new Set(rows.map(r=>weekOf(r.day)))];
+  const card = (lb,v)=>`<div class="lcard"><small>${lb}</small><b>${v}</b></div>`;
+  document.getElementById("logBody").innerHTML = `
+    <div class="lcards">${card("取り組んだ日数", rows.length+"日")}${card("連続", streak+"日")}${card("直近7日の平均（5教科）", avg==null?"—":avg+" / 50")}${card("直近7日の学習時間", Math.floor(mins7/60)+"時間"+(mins7%60)+"分")}</div>
+    ${weeks.map(w=>{
+      const ws = weekStats(w), ps = weekStats(w-1), wr = rows.filter(r=>weekOf(r.day)===w);
+      const wt = wr.find(r=>r.weekText);
+      return `<h3 class="lh">第${w}週　${ws?ws.期間:""}${ws?`　正答率 ${ws.全体の正答率}%${ps?`（先週 ${ps.全体の正答率}%）`:""}　苦手 ${ws.週末の苦手な問題数}問${ws.定着率!=null?`　定着率 ${ws.定着率}%`:""}`:""}</h3>
+        ${wt?`<details class="ldet"><summary>🔊 1週間の評価を読む</summary><div class="etext">${esc(wt.weekText)}</div><button class="btn" onclick="speakText(this.previousElementSibling.textContent)">▶ 音声で聞く</button></details>`:""}
+        <table class="rv ltab"><thead><tr><th>日付</th>${SUBJECTS.map(s=>`<th>${s.name}</th>`).join("")}<th>合計</th><th>時間</th><th>ウォームアップ／補強</th><th>まちがえた単元・評価</th></tr></thead><tbody>
+        ${wr.map(r=>`<tr><td><b>${r.day}日目</b><br><small>${r.date.slice(5).replace("-","/")}</small></td>
+          ${r.sc.map(x=>`<td class="${x==null?"":x>=8?"good":x<=5?"bad":""}">${x==null?"—":x}</td>`).join("")}
+          <td><b>${r.total}</b></td><td>${r.mins?r.mins+"分":"—"}</td>
+          <td><small>${r.warm?`WU ${r.warm.ok}/${r.warm.n}`:"WU —"}<br>${r.review?`補強 ${r.review.w[1]+r.review.c[1]}/${r.review.w[0]+r.review.c[0]}`:"補強 —"}${r.week?`<br>週末 ${r.week.w[1]+r.week.c[1]}/${r.week.w[0]+r.week.c[0]}`:""}</small></td>
+          <td><small>${esc(r.units.slice(0,4).join("、"))||"—"}</small>${r.evalText?`<details class="ldet"><summary>今日の評価</summary><div class="etext">${esc(r.evalText)}</div><button class="btn" onclick="speakText(this.previousElementSibling.textContent)">▶ 音声で聞く</button></details>`:""}</td></tr>`).join("")}
+        </tbody></table>`;
+    }).join("") || `<p class="note">まだ記録がありません。「今日のメニュー」から始めると、ここに毎日の記録がたまります。</p>`}
+    <p class="note">${store.syncUrl?"✓ スプレッドシートへの自動送信：オン":"スプレッドシートへの自動送信はオフです（⚙設定で送信先URLを入れるとオンになります）"}</p>`;
+  show("logv");
+}
+
+/* ============================================================
+   Googleスプレッドシートへの自動送信（Google Apps Script のウェブアプリへPOST）
+   ============================================================ */
+function sendSheet(payload){
+  if(!store.syncUrl) return;
+  try{
+    fetch(store.syncUrl, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(Object.assign({ token:store.syncToken||"" }, payload)) }).catch(()=>{});
+  }catch(e){}
+}
+function syncDay(date){
+  date = date || todayStr();
+  const r = dayRow(date); if(!r) return;
+  const row = { "日付":r.date, "日目":r.day };
+  SUBJECTS.forEach((s,i)=>row[s.name] = r.sc[i]==null ? "" : r.sc[i]);
+  Object.assign(row, { "合計":r.total, "学習時間（分）":r.mins,
+    "ウォームアップ": r.warm ? `${r.warm.ok}/${r.warm.n}` : "",
+    "弱点補強2回目": r.review ? `記述${r.review.w[1]}/${r.review.w[0]} 4択${r.review.c[1]}/${r.review.c[0]}` : "",
+    "週末の補強": r.week ? `記述${r.week.w[1]}/${r.week.w[0]} 4択${r.week.c[1]}/${r.week.c[0]}` : "",
+    "まちがえた単元": r.units.join("、"), "今日の評価": r.evalText });
+  sendSheet({ sheet:"毎日", key:r.date, row });
+}
+function syncWeek(w){
+  const ws = weekStats(w); if(!ws) return;
+  const ps = weekStats(w-1), d = weekDates(w), h = store.hist[d[d.length-1]]||{};
+  const row = { "週":`第${w}週`, "期間":ws.期間, "正答率（%）":ws.全体の正答率, "先週の正答率（%）":ps?ps.全体の正答率:"" };
+  ws.教科別.forEach(x=>row[x.教科+"（%）"] = x.正答率==null?"":x.正答率);
+  Object.assign(row, { "苦手な問題の数":ws.週末の苦手な問題数, "先週の苦手な問題の数":ps?ps.週末の苦手な問題数:"",
+    "定着率（%）":ws.定着率==null?"":ws.定着率, "1問の平均時間（秒）":ws.一問の平均秒==null?"":ws.一問の平均秒,
+    "まちがいの多い単元":ws.まちがいの多い単元.map(u=>`${u.単元}(${u.回数})`).join("、"), "1週間の評価":h.weekText||"" });
+  sendSheet({ sheet:"週", key:`第${w}週`, row });
+}
+function testSync(){
+  const url = document.getElementById("sSync").value.trim();
+  if(!url){ alert("送信先URLを入れてください。"); return; }
+  const keep = [store.syncUrl, store.syncToken];
+  store.syncUrl = url; store.syncToken = document.getElementById("sSyncToken").value.trim();
+  sendSheet({ sheet:"テスト", key:"テスト", row:{ "日時":new Date().toLocaleString("ja-JP"), "内容":"手書き一問一答アプリからのテスト送信です" } });
+  [store.syncUrl, store.syncToken] = keep;
+  alert("テスト送信しました。スプレッドシートに「テスト」シートができていれば成功です。");
+}
+
+/* ============================================================
    弱点トレーニング
    - 書き取り型（漢字・英単語・用語）：見て覚える → 見ないでN回書く
    - 類題型（数学・数値の答え）：AIが作った類題をN問解く
@@ -1557,6 +1675,7 @@ function practiceType(q){
   return /[0-9０-９]/.test(q[1]) ? "similar" : "write";
 }
 function startTrain(){
+  cur.t1 = Date.now();
   const wrongItems = cur.items.filter((it,i)=>!cur.answers[i].correct);
   const queue = [];
   wrongItems.forEach(w=>{
@@ -1680,6 +1799,7 @@ function finishTrain(){
   fillTable(items.map(it=>({ mark:it.rec.correct,
     label:(it.kind==="write"?"【書き取り】":it.kind==="sim"?"【類題】":"【再挑戦】")+it.q[0],
     img:it.rec.img, read:it.rec.read, answer:it.q[1] })));
+  addStudy(Date.now()-(cur.t1||Date.now())); syncDay();
   cur.mode = "done"; tick();
   show("result");
 }
@@ -1697,6 +1817,8 @@ function openSettings(){
   document.getElementById("sAuto").value = String(store.autoNext);
   document.getElementById("sWriteN").value = String(store.writeN);
   document.getElementById("sSimN").value = String(store.simN);
+  document.getElementById("sSync").value = store.syncUrl||"";
+  document.getElementById("sSyncToken").value = store.syncToken||"";
   fillVoiceSelect();
   document.getElementById("sRate").value = String(store.rate||1);
   document.getElementById("sPitch").value = String(store.pitch||1.15);
@@ -1713,6 +1835,8 @@ function saveSettings(){
   store.autoNext = +document.getElementById("sAuto").value;
   store.writeN = +document.getElementById("sWriteN").value;
   store.simN = +document.getElementById("sSimN").value;
+  store.syncUrl = document.getElementById("sSync").value.trim();
+  store.syncToken = document.getElementById("sSyncToken").value.trim();
   store.voice = document.getElementById("sVoice").value;
   store.rate = +document.getElementById("sRate").value;
   store.pitch = +document.getElementById("sPitch").value;
