@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>手書き一問一答 入試250</title>
+<title>手書き一問一答 入試350</title>
 <style>
 :root{
   --bg:#f4f1ea; --card:#fffdf8; --ink:#1f2a33; --sub:#6b7680; --line:#ddd6c8;
@@ -29,7 +29,7 @@ h1{font-size:22px;letter-spacing:.04em}
 .subj h2{font-size:20px;display:flex;justify-content:space-between;align-items:baseline}
 .subj h2 span{font-size:15px;color:var(--sub);font-weight:400}
 .subj h2 span b{color:var(--c);font-size:22px}
-.sets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.sets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
 .setbtn{padding:10px 2px;border-radius:10px;background:#fff;border:2px solid var(--line);font-size:14px;line-height:1.35}
 .setbtn small{display:block;font-size:12px;color:var(--sub)}
 .setbtn .sc{font-size:16px;font-weight:700;color:var(--c)}
@@ -101,6 +101,18 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 .mbox{max-height:92vh;overflow:auto}
 .mbox select{width:100%;padding:9px;font-size:16px;border:2px solid var(--line);border-radius:8px;margin-top:4px;background:#fff}
 .mbox .two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.today{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;border:3px solid var(--accent)}
+.today .th{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.today .th b{font-size:20px}
+.today .th span{font-size:14px;color:var(--sub)}
+.tlist{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.tbtn{padding:12px 4px;border-radius:10px;background:#fff;border:2px solid var(--c);font-size:16px;font-weight:700;color:var(--c);line-height:1.4}
+.tbtn small{display:block;font-size:12px;color:var(--sub);font-weight:400}
+.tbtn.done{background:var(--c);color:#fff}
+.tbtn.done small{color:#fff}
+.tsum{margin-top:10px;font-size:15px;color:var(--sub);text-align:right}
+.tsum b{font-size:22px;color:var(--ink)}
+@media (max-width:640px){.tlist{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:640px){.qtext{font-size:19px}canvas#pad{height:260px}}
 </style>
 </head>
@@ -110,11 +122,12 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 <div id="home" class="wrap">
   <header>
     <div>
-      <h1>手書き一問一答　入試250</h1>
-      <div class="total">合計（各セットの最高点）<b id="grand">0</b> / 250点</div>
+      <h1>手書き一問一答　入試350</h1>
+      <div class="total">合計（各セットの最高点）<b id="grand">0</b> / 350点</div>
     </div>
     <button class="btn" onclick="openSettings()">⚙ 設定</button>
   </header>
+  <div id="today"></div>
   <div class="grid" id="subjGrid"></div>
   <div class="note" id="modeNote"></div>
 </div>
@@ -150,7 +163,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
   <header>
     <h1 id="rTitle"></h1>
     <div style="display:flex;gap:8px">
-      <button class="btn" onclick="startSet(cur.subj,cur.set)">このセットをもう一度</button>
+      <button class="btn" onclick="retrySet()">このセットをもう一度</button>
       <button class="btn primary" onclick="goHome()">ホームへ</button>
     </div>
   </header>
@@ -186,7 +199,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
         <select id="sTimeUp"><option value="stop">残りを×にして終了</option><option value="go">最後まで解く（超過を表示）</option></select>
       </label>
     </div>
-    <p>標準の制限時間（10問）：国語・英語・社会・理科 3分／理科「計算・応用」5分／数学 5分（方程式のみ6分）。AIの採点中と正解表示中は止まります。</p>
+    <p>標準の制限時間（10問）：国語・英語・社会 3分／理科 3〜5分（計算が多い回は長め）／数学 5〜6分。AIの採点中と正解表示中は止まります。</p>
     <label>正解したとき、次の問題へ自動で進むまで
       <select id="sAuto"><option value="0">自動で進まない</option><option value="1">1秒</option><option value="1.5">1.5秒</option><option value="2">2秒</option><option value="3">3秒</option></select>
     </label>
@@ -202,6 +215,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
     <div class="chk"><input type="checkbox" id="sPen"><span>ペンのみで書く（手のひら・指のタッチを無視）</span></div>
     <p>APIキーはこの端末のブラウザ内にだけ保存され、HTMLファイルには含まれません。</p>
     <div class="acts">
+      <button class="btn" onclick="resetPlan()">1日目からやり直す</button>
       <button class="btn" onclick="resetScores()">成績をリセット</button>
       <button class="btn" onclick="closeSettings()">閉じる</button>
       <button class="btn primary" onclick="saveSettings()">保存</button>
@@ -276,6 +290,30 @@ const SUBJECTS = [
     ["『坊っちゃん』の作者","夏目漱石"],
     ["『枕草子』の作者","清少納言"],
     ["歴史的仮名遣い「おもふ」を現代仮名遣いに","おもう"]
+  ]},
+  { name:"漢字（入試頻出）", mode:"exact", hint:"漢字またはひらがな", rule:"「読み」はひらがなで、「書き」は漢字で答える。指定と違う文字種は不正解。", qs:[
+    ["【読み】事態を<em>収拾</em>する","しゅうしゅう"],
+    ["【読み】<em>寡黙</em>な人","かもく"],
+    ["【読み】<em>示唆</em>に富む話","しさ"],
+    ["【読み】<em>漸く</em>春になった","ようやく"],
+    ["【読み】<em>僅か</em>な差で勝つ","わずか"],
+    ["【書き】<em>セイミツ</em>な機械","精密"],
+    ["【書き】対策を<em>ケントウ</em>する","検討"],
+    ["【書き】米の<em>シュウカク</em>","収穫"],
+    ["【書き】情報を<em>テイキョウ</em>する","提供"],
+    ["【書き】目標を<em>カカ</em>げる","掲"]
+  ]},
+  { name:"同音異義語・同訓異字", mode:"exact", hint:"漢字（送り仮名があればひらがなも）", rule:"文脈に合う漢字で書く。同じ読みの別の漢字は不正解。", qs:[
+    ["<em>イガイ</em>な結果に驚く　（カタカナを漢字に）","意外"],
+    ["関係者<em>イガイ</em>は立ち入り禁止　（カタカナを漢字に）","以外"],
+    ["<em>タイショウ</em>的な性格の二人　（カタカナを漢字に）","対照"],
+    ["中学生を<em>タイショウ</em>にした本　（カタカナを漢字に）","対象"],
+    ["左右<em>タイショウ</em>の図形　（カタカナを漢字に）","対称"],
+    ["<em>ツト</em>めて明るく振る舞う　（カタカナを漢字に）","努"],
+    ["銀行に<em>ツト</em>める　（カタカナを漢字に）","勤"],
+    ["議長を<em>ツト</em>める　（カタカナを漢字に）","務"],
+    ["駅までの時間を<em>ハカ</em>る　（カタカナを漢字に）","計"],
+    ["問題の解決を<em>ハカ</em>る　（カタカナを漢字に）","図"]
   ]}
 ]},
 { id:"sugaku", name:"数学", color:"var(--sugaku)", sets:[
@@ -338,6 +376,30 @@ const SUBJECTS = [
     ["3 ＜ √a ＜ 4 を満たす自然数 a は何個","6個","6"],
     ["連続する3つの整数の和が 57 のとき、最も小さい整数","18"],
     ["データ 1, 3, 4, 6, 7, 9, 10, 12 の第1四分位数","3.5"]
+  ]},
+  { name:"関数・図形の応用", rule:"式・値が数学的に等価で、最も簡単な形なら正解。単位の有無は問わない。根号・πを含む答えはその形で正しいこと。", qs:[
+    ["放物線 y ＝ x² 上の2点 A(−2, 4)、B(4, 16) を通る直線の式","y=2x+8"],
+    ["放物線 y ＝ x² 上の2点 A(−2, 4)、B(4, 16) と原点Oを結んだ △OAB の面積","24"],
+    ["関数 y ＝ ax² で、x が 2 から 4 まで増加するときの変化の割合が 12 のとき、a の値","2","a=2"],
+    ["1辺 4cm の立方体の対角線の長さ","4√3 cm","4√3"],
+    ["縦 6cm、横 8cm の長方形の対角線の長さ","10cm","10"],
+    ["半径 5cm の円で、中心からの距離が 3cm である弦の長さ","8cm","8"],
+    ["底面が1辺 6cm の正方形で、高さ 4cm の正四角錐の体積","48cm³","48"],
+    ["相似比が 2：3 の2つの円錐の体積比","8:27"],
+    ["三角形の3つの内角の比が 2：3：4 のとき、最も大きい角の大きさ","80°","80"],
+    ["平行四辺形ABCDで ∠A ＝ 110° のとき、∠B の大きさ","70°","70"]
+  ]},
+  { name:"確率・数・式の応用", rule:"数値・式が正しければ正解。確率は約分された分数であること。単位の有無は問わない。", qs:[
+    ["大小2つのさいころを投げるとき、出る目の積が 6 になる確率","1/9"],
+    ["赤玉3個・白玉2個が入った袋から同時に2個取り出すとき、2個とも赤玉である確率","3/10"],
+    ["大小2つのさいころを投げるとき、出る目の和が 10 以上になる確率","1/6"],
+    ["x ＝ √5 ＋ 2 のとき、x² − 4x ＋ 4 の値","5"],
+    ["x ＋ y ＝ 5、xy ＝ 3 のとき、x² ＋ y² の値","19"],
+    ["二次方程式 x² ＋ ax − 12 ＝ 0 の解の1つが 3 のとき、a の値","1","a=1"],
+    ["十の位と一の位の数の和が 9 の2けたの自然数がある。十の位と一の位を入れかえると、元の数より 27 大きくなる。元の数","36"],
+    ["定価 2000円 の品物を 15% 引きで買ったときの代金","1700円","1700"],
+    ["連続する2つの正の整数の積が 72 のとき、小さいほうの整数","8"],
+    ["√(45n) が自然数となる最小の自然数 n","5","n=5"]
   ]}
 ]},
 { id:"eigo", name:"英語", color:"var(--eigo)", sets:[
@@ -400,6 +462,30 @@ const SUBJECTS = [
     ["A: Thank you very much.　B: You're (　　).","welcome"],
     ["（受付で）May I (　　) your name, please?","have"],
     ["A: (　　) don't we go shopping?　B: Sounds good.","Why"]
+  ]},
+  { name:"入試頻出語のつづり", mode:"exact", hint:"英単語", rule:"英単語のつづりが完全に正しければ正解。大文字・小文字は問わない。", qs:[
+    ["「建物」を英語で","building"],
+    ["「科学」を英語で","science"],
+    ["「辞書」を英語で","dictionary"],
+    ["「質問」を英語で","question"],
+    ["「交通」を英語で","traffic"],
+    ["「将来・未来」を英語で","future"],
+    ["「伝統的な」を英語で","traditional"],
+    ["「必要な」を英語で","necessary"],
+    ["「美しい」を英語で","beautiful"],
+    ["「決める」を英語で","decide"]
+  ]},
+  { name:"文法の応用（1語）", mode:"exact", hint:"英単語", rule:"（　）に入る英単語1語のつづりが正しければ正解。大文字・小文字は問わない。", qs:[
+    ["I want something cold (　　) drink.","to"],
+    ["The man (　　) is standing there is my uncle.","who","that"],
+    ["This is the book (　　) I bought yesterday.","which","that"],
+    ["Do you know (　　) he lives?（彼がどこに住んでいるか）","where"],
+    ["My mother told me (　　) clean my room.","to"],
+    ["English is (　　) in many countries.（speak を適切な形に）","spoken"],
+    ["I have (　　) finished my homework.（もう）","already"],
+    ["She has been sick (　　) three days.","for"],
+    ["I wish I (　　) speak French.","could"],
+    ["This is the (　　) interesting book of all.","most"]
   ]}
 ]},
 { id:"shakai", name:"社会", color:"var(--shakai)", sets:[
@@ -462,6 +548,30 @@ const SUBJECTS = [
     ["日本の中央銀行","日本銀行","日銀"],
     ["訪問販売などで、一定期間内なら無条件で契約を解除できる制度","クーリング・オフ","クーリングオフ"],
     ["国連安全保障理事会の常任理事国が持つ、1国でも反対すると決定できない権利","拒否権"]
+  ]},
+  { name:"歴史（近代〜現代）", rule:"用語が正しければ正解。漢字の軽い誤りは、別の語と誤解されない程度なら正解。", qs:[
+    ["1904年、日本とロシアの間で起こった戦争","日露戦争"],
+    ["日露戦争の講和条約","ポーツマス条約"],
+    ["1910年、日本が韓国を植民地にしたこと","韓国併合"],
+    ["1918年、米の安売りを求めて全国に広がった騒動","米騒動"],
+    ["1925年に制定された、満25歳以上のすべての男子に選挙権を与えた法律","普通選挙法"],
+    ["1929年、ニューヨークの株価暴落から始まった世界的な不景気","世界恐慌"],
+    ["1931年、関東軍が南満州鉄道の線路を爆破したことから始まった出来事","満州事変"],
+    ["第二次世界大戦後、地主の土地を小作人に安く売り渡した改革","農地改革"],
+    ["1951年、日本が48か国と結んだ平和条約","サンフランシスコ平和条約"],
+    ["1950年代半ばから1970年代初めまで続いた、日本経済の急速な成長","高度経済成長"]
+  ]},
+  { name:"公民・地理の応用", rule:"用語が正しければ正解。漢字の軽い誤りや表記ゆれは、別の語と誤解されない程度なら正解。", qs:[
+    ["毎年1回、1月に召集され、主に予算を審議する国会","常会","通常国会"],
+    ["衆議院の総選挙の日から30日以内に召集される国会","特別会","特別国会"],
+    ["裁判官をやめさせるかどうかを判断するために、国会に設けられる裁判所","弾劾裁判所"],
+    ["最高裁判所の裁判官が適任かどうかを、国民が投票で判断する制度","国民審査"],
+    ["地方公共団体の間の財政の格差をおさえるために、国から配分されるお金","地方交付税交付金","地方交付税"],
+    ["消費税のように、税を納める人と負担する人が異なる税","間接税"],
+    ["所得が多い人ほど税率が高くなるしくみ","累進課税"],
+    ["企業が利潤を追求するだけでなく、社会に対して果たすべき責任","企業の社会的責任","CSR"],
+    ["香川県や岡山県などに見られる、1年を通して降水量が少ない気候","瀬戸内の気候"],
+    ["地球温暖化の原因となる、二酸化炭素などの気体","温室効果ガス"]
   ]}
 ]},
 { id:"rika", name:"理科", color:"var(--rika)", sets:[
@@ -524,6 +634,30 @@ const SUBJECTS = [
     ["P波の速さを 6km/s とすると、震源から 60km の地点に P波が届くまでの時間","10秒","10"],
     ["60W の電球を 2 時間使ったときの電力量（Wh）","120Wh","120"],
     ["丸の種子(AA)としわの種子(aa)をかけ合わせてできた子どうしをかけ合わせたとき、孫の丸：しわ の比","3:1"]
+  ]},
+  { name:"応用（物理・化学）", rule:"用語・数値が正しければ正解。単位がなくても数値が正しければ正解。", qs:[
+    ["2Ω と 3Ω の抵抗を直列につなぎ、10V の電圧をかけたときに流れる電流","2A","2"],
+    ["12Ω の電熱線に 6V の電圧をかけたときの電力","3W","3"],
+    ["200g の物体を 3m 持ち上げたときの仕事（100g の物体にはたらく重力を 1N とする）","6J","6"],
+    ["凸レンズの焦点距離の2倍の位置に物体を置いたとき、実像ができるのは焦点距離の何倍の位置か","2倍","焦点距離の2倍の位置"],
+    ["雷の光が見えてから 3 秒後に音が聞こえた。音の速さを 340m/s としたときの雷までの距離","1020m","1020"],
+    ["うすい塩酸に亜鉛を入れたときに発生する気体","水素","H2"],
+    ["酸化銅と炭素の混合物を加熱したとき、酸化銅が還元されてできる物質","銅","Cu"],
+    ["塩酸と水酸化ナトリウム水溶液を中和させたときにできる塩","塩化ナトリウム","NaCl"],
+    ["鉄と硫黄の混合物を加熱してできる物質","硫化鉄","FeS"],
+    ["質量パーセント濃度 20% の食塩水 150g に含まれる食塩の質量","30g","30"]
+  ]},
+  { name:"応用（生物・地学）", rule:"用語・数値が正しければ正解。単位がなくても数値が正しければ正解。ひらがな・カタカナでも語として正しければ正解。", qs:[
+    ["植物が根から吸収した水を、水蒸気として体の外に出すはたらき","蒸散"],
+    ["小腸の柔毛で吸収されたブドウ糖とアミノ酸が入る血管","毛細血管"],
+    ["肺で酸素と二酸化炭素の交換が行われる小さな袋","肺胞"],
+    ["受精を行わず、親の体の一部から新しい個体ができる生殖","無性生殖"],
+    ["生物の間の「食べる・食べられる」の関係のつながり","食物連鎖"],
+    ["震源から 72km の地点の初期微動継続時間が 9 秒のとき、震源から 120km の地点の初期微動継続時間","15秒","15"],
+    ["北の空の星が、北極星を中心に1時間に回転する角度","15°","15度"],
+    ["同じ時刻に見える星座の位置は、1か月でおよそ何度西へ移動するか","30°","30度"],
+    ["地層が堆積した時代を知る手がかりになる化石","示準化石"],
+    ["日本の夏に勢力が強くなる、太平洋上の高気圧","太平洋高気圧","小笠原高気圧"]
   ]}
 ]}
 ];
@@ -533,27 +667,83 @@ const SUBJECTS = [
    ============================================================ */
 const STORE_KEY = "kijutsu250_v1";
 let store = { key:"", modelRead:"gemini-flash-latest", modelJudge:"gemini-flash-lite-latest", penOnly:false, best:{},
-  timeScale:100, timeUp:"stop", autoNext:1.5, writeN:3, simN:2 };
+  timeScale:100, timeUp:"stop", autoNext:1.5, writeN:3, simN:2,
+  plan:{ day:1, date:"", done:{} },   // 毎日のメニューの進み具合
+  qstat:{} };                         // 問題ごとの成績 {n:回数, w:まちがい回数, ok:直近の正誤, last:日付}
 function load(){ try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)||"null"); if(s) store = Object.assign(store,s); }catch(e){} }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 load();
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 /* ============================================================
    制限時間（10問あたりの標準秒数）
    ============================================================ */
 function baseTime(si,i){
   const id = SUBJECTS[si].id;
-  if(id==="sugaku") return i===1 ? 360 : 300;   // 数学5分（方程式6分）
-  if(id==="rika" && i===4) return 300;           // 理科「計算・応用」5分
-  return 180;                                     // その他3分
+  if(id==="sugaku") return [300,360,300,300,300,360,360][i]||300;   // 数学5〜6分
+  if(id==="rika")   return (i===4||i===5) ? 300 : (i===6 ? 240 : 180); // 理科3〜5分
+  return 180;                                                          // その他3分
 }
-function setLimit(si,i){ return store.timeScale>0 ? Math.round(baseTime(si,i)*store.timeScale/100) : 0; }
+function itemsLimit(items){
+  if(!(store.timeScale>0)) return 0;
+  const base = items.reduce((t,it)=>t + baseTime(it.si,it.set)/10, 0);
+  return Math.round(base*store.timeScale/100);
+}
 function fmt(sec){ const neg = sec<0; sec = Math.abs(Math.ceil(sec)); return (neg?"−":"")+Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+
+/* ============================================================
+   毎日のメニュー（1〜7日目：第1〜7回／8日目以降：苦手優先の今日の10問）
+   ============================================================ */
+function planState(){
+  const p = store.plan;
+  if(p.date && p.date!==todayStr() && SUBJECTS.every(s=>p.done[s.id]!=null)){
+    p.day++; p.done={}; p.date=""; save();
+  }
+  return p;
+}
+function planLabel(day){
+  if(day<=7) return { title:`${day}日目`, sub:`1週目：第${day}回` };
+  const w = Math.ceil(day/7), d = (day-1)%7+1;
+  return { title:`${day}日目`, sub:`${w}週目${d}日目：今日の10問（苦手優先＋全範囲から）` };
+}
+function renderToday(){
+  const p = planState(), L = planLabel(p.day);
+  const allDone = SUBJECTS.every(s=>p.done[s.id]!=null);
+  const sum = SUBJECTS.reduce((t,s)=>t+(p.done[s.id]||0),0);
+  document.getElementById("today").innerHTML = `<div class="today">
+    <div class="th"><b>今日のメニュー　${L.title}</b><span>${L.sub}</span></div>
+    <div class="tlist">${SUBJECTS.map((s,si)=>{
+      const sc = p.done[s.id];
+      const what = p.day<=7 ? s.sets[p.day-1].name : "今日の10問";
+      return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:what}</small></button>`;
+    }).join("")}</div>
+    <div class="tsum">${allDone?"今日のメニュー完了！ 次は明日。　":""}今日の合計 <b>${sum}</b> / 50点</div>
+  </div>`;
+}
+function startDaily(si){
+  const p = planState();
+  if(p.done[SUBJECTS[si].id]!=null && !confirm("今日はもう解きました。もう一度解きますか？（記録は最初の点数のままです）")) return;
+  const daily = p.done[SUBJECTS[si].id]==null;
+  if(p.day<=7) startSet(si, p.day-1, daily);
+  else startItems(si, -1, pickMix(si), daily);
+}
+/* 今日の10問：直近でまちがえた問題を最大6問＋しばらく解いていない問題 */
+function pickMix(si){
+  const s = SUBJECTS[si], all = [];
+  s.sets.forEach((st,i)=>st.qs.forEach((q,qi)=>all.push({ si, set:i, qi, q, st, key:`${s.id}-${i}-${qi}` })));
+  const stat = k => store.qstat[k] || { n:0, ok:null, last:"" };
+  const weak = shuffle(all.filter(x=>stat(x.key).ok===false)).slice(0,6);
+  const rest = shuffle(all.filter(x=>!weak.includes(x)))
+    .sort((a,b)=> (stat(a.key).last||"").localeCompare(stat(b.key).last||"") || stat(a.key).n-stat(b.key).n);
+  return shuffle(weak.concat(rest.slice(0, 10-weak.length)));
+}
 
 /* ============================================================
    ホーム
    ============================================================ */
 function renderHome(){
+  renderToday();
   const g = document.getElementById("subjGrid"); g.innerHTML = "";
   let grand = 0;
   SUBJECTS.forEach((s,si)=>{
@@ -561,14 +751,14 @@ function renderHome(){
     let sum = 0; s.sets.forEach((_,i)=>{ if(b[i]!=null) sum+=b[i]; });
     grand += sum;
     const d = document.createElement("div"); d.className="subj"; d.style.setProperty("--c",s.color);
-    d.innerHTML = `<h2>${s.name}<span><b>${sum}</b> / 50点</span></h2><div class="sets"></div>`;
+    d.innerHTML = `<h2>${s.name}<span><b>${sum}</b> / ${s.sets.length*10}点</span></h2><div class="sets"></div>`;
     const sets = d.querySelector(".sets");
     s.sets.forEach((st,i)=>{
-      const sc = b[i], lim = setLimit(si,i);
+      const sc = b[i], lim = Math.round(baseTime(si,i)*store.timeScale/100);
       const bt = document.createElement("button");
       bt.className = "setbtn"+(sc!=null?" done":"");
       bt.innerHTML = `第${i+1}回<small>${st.name}</small><span class="sc">${sc!=null?sc+"/10":"—"}</span>${lim?`<small>⏱${fmt(lim)}</small>`:""}`;
-      bt.onclick = ()=>startSet(si,i);
+      bt.onclick = ()=>startSet(si,i,false);
       sets.appendChild(bt);
     });
     g.appendChild(d);
@@ -585,19 +775,25 @@ function renderHome(){
 let cur = null;
 function show(id){ ["home","quiz","result"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
 function curSubj(){ return SUBJECTS[cur.subj]; }
-function curSet(){ return SUBJECTS[cur.subj].sets[cur.set]; }
 
-function startSet(si,i){
+function startSet(si,i,daily){
+  const st = SUBJECTS[si].sets[i];
+  startItems(si, i, st.qs.map((q,qi)=>({ si, set:i, qi, q, st, key:`${SUBJECTS[si].id}-${i}-${qi}` })), daily);
+}
+function startItems(si, set, items, daily){
   const s = SUBJECTS[si];
-  cancelAuto(); timerReset(setLimit(si,i));
-  cur = { mode:"test", subj:si, set:i, idx:0, answers:[] };
+  cancelAuto();
+  cur = { mode:"test", subj:si, set, items, idx:0, answers:[], daily:!!daily };
+  timerReset(itemsLimit(items));
   document.getElementById("quiz").style.setProperty("--c",s.color);
   document.getElementById("result").style.setProperty("--c",s.color);
   document.getElementById("qTag").textContent = s.name;
   show("quiz"); setPadRows(0); renderQ();
 }
+function retrySet(){ startItems(cur.subj, cur.set, cur.items, false); }
 function quitQuiz(){ if(confirm("中断してホームに戻りますか？")) goHome(); }
 function goHome(){ cancelAuto(); timerPause(); show("home"); renderHome(); }
+function setTitle(){ return cur.set>=0 ? `第${cur.set+1}回　${SUBJECTS[cur.subj].sets[cur.set].name}` : "今日の10問"; }
 
 /* 問題表示の共通部分 */
 function prepareQ(){
@@ -608,9 +804,9 @@ function prepareQ(){
   const gb = document.getElementById("gradeBtn"); gb.disabled=false; gb.textContent="答え合わせ"; gb.onclick = onGrade;
 }
 function renderQ(){
-  const st = curSet(), q = st.qs[cur.idx];
-  document.getElementById("qSetName").textContent = `第${cur.set+1}回　${st.name}`;
-  document.getElementById("qText").innerHTML = `<span style="color:var(--c)">問${cur.idx+1}</span>　${q[0]}`;
+  const it = cur.items[cur.idx];
+  document.getElementById("qSetName").textContent = cur.set>=0 ? setTitle() : `今日の10問　（第${it.set+1}回 ${it.st.name}より）`;
+  document.getElementById("qText").innerHTML = `<span style="color:var(--c)">問${cur.idx+1}</span>　${it.q[0]}`;
   document.getElementById("qCount").textContent = `${cur.idx+1} / 10`;
   document.getElementById("qProg").style.width = (cur.idx*10)+"%";
   prepareQ(); timerStart();
@@ -643,11 +839,10 @@ function tick(){
 }
 function timeUp(){
   timerPause(); cancelAuto();
-  const st = curSet();
-  for(let i=cur.idx;i<10;i++){
+  for(let i=cur.idx;i<cur.items.length;i++){
     const a = cur.answers[i];
     if(!a || a.correct===null){
-      const q = st.qs[i];
+      const q = cur.items[i].q;
       cur.answers[i] = { q:q[0], answer:q[1], img:null, read:"（時間切れ）", correct:false, comment:"" };
     }
   }
@@ -777,17 +972,18 @@ JSONのみ:{"read":"読取","correct":true/false,"comment":"20字以内"}`;
 /* ============================================================
    答え合わせ（本番・トレーニング共通）
    ============================================================ */
-function curQ(){ return cur.mode==="test" ? curSet().qs[cur.idx] : cur.queue[cur.tpos].q; }
+function curItem(){ return cur.mode==="test" ? cur.items[cur.idx] : cur.queue[cur.tpos]; }
 async function onGrade(){
   if(!strokes.length){ alert("答えを書いてから答え合わせをしてください。"); return; }
-  if(cur.mode==="train" && cur.queue[cur.tpos].kind==="write") return gradeWrite();
+  const it = curItem();
+  if(cur.mode==="train" && it.kind==="write") return gradeWrite();
   timerPause();
-  const st = curSet(), q = curQ();
+  const q = it.q, st = it.st;
   const img = exportImage();
   locked = true; document.getElementById("padWrap").classList.add("locked");
   const gb = document.getElementById("gradeBtn"); gb.disabled = true;
   const rec = { q:q[0], answer:q[1], img, read:"", correct:null, comment:"" };
-  if(cur.mode==="test") cur.answers[cur.idx] = rec; else cur.queue[cur.tpos].rec = rec;
+  if(cur.mode==="test") cur.answers[cur.idx] = rec; else it.rec = rec;
   if(store.key){
     gb.innerHTML = '<span class="spinner"></span>採点中…';
     try{
@@ -799,7 +995,7 @@ async function onGrade(){
   renderResult(rec);
 }
 function nextLabel(){
-  if(cur.mode==="test") return cur.idx===9 ? "結果を見る" : "次の問題へ →";
+  if(cur.mode==="test") return cur.idx===cur.items.length-1 ? "結果を見る" : "次の問題へ →";
   return cur.tpos>=cur.queue.length-1 ? "トレーニング終了" : "次へ →";
 }
 function renderResult(rec){
@@ -836,7 +1032,7 @@ function flipMark(){ cancelAuto(); const r=curRec(); r.correct=!r.correct; r.com
 function nextQ(){
   cancelAuto();
   if(cur.mode==="train") return trainNext();
-  if(cur.idx<9){ cur.idx++; renderQ(); }
+  if(cur.idx<cur.items.length-1){ cur.idx++; renderQ(); }
   else finishSet();
 }
 
@@ -845,16 +1041,27 @@ function nextQ(){
    ============================================================ */
 function finishSet(){
   timerPause(); cancelAuto();
-  const s = curSubj(), st = curSet();
+  const s = curSubj();
   const score = cur.answers.filter(a=>a&&a.correct).length;
-  store.best[s.id] = store.best[s.id]||{};
-  const prev = store.best[s.id][cur.set];
-  const isNew = prev==null || score>prev;
-  if(isNew) store.best[s.id][cur.set] = score;
+  // 問題ごとの成績を記録（今日の10問の出題に使う）
+  const t = todayStr();
+  cur.items.forEach((it,i)=>{
+    const a = cur.answers[i], st = store.qstat[it.key] || { n:0, w:0, ok:null, last:"" };
+    st.n++; if(!a.correct) st.w++; st.ok = !!a.correct; st.last = t;
+    store.qstat[it.key] = st;
+  });
+  let line = "";
+  if(cur.set>=0){
+    store.best[s.id] = store.best[s.id]||{};
+    const prev = store.best[s.id][cur.set];
+    const isNew = prev==null || score>prev;
+    if(isNew) store.best[s.id][cur.set] = score;
+    line = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
+  } else line = "今日の10問";
+  if(cur.daily){ const p = planState(); p.done[s.id] = score; p.date = t; cur.daily = false; }
   save();
-  document.getElementById("rTitle").textContent = `${s.name}　第${cur.set+1}回　${st.name}`;
+  document.getElementById("rTitle").textContent = `${s.name}　${setTitle()}`;
   document.getElementById("rScore").innerHTML = `${score}<small> / 10点</small>`;
-  let line = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
   if(T.limit){
     const used = elapsed();
     line += cur.timedOut ? `　／　⏱ 時間切れ（制限 ${fmt(T.limit)}）`
@@ -866,7 +1073,7 @@ function finishSet(){
     ? `<div class="trainbox"><div class="t"><b>まちがえた ${wrong}問 をすぐに復習しよう</b><br>
         漢字・単語・用語は「見て覚える→見ないで${store.writeN}回書く」、計算問題は類題を${store.simN}問ずつ解きます。</div>
         <button class="btn primary" onclick="startTrain()">弱点トレーニングを始める →</button></div>`
-    : `<div class="trainbox"><div class="t"><b>全問正解！</b> この調子で次の回へ進もう。</div></div>`;
+    : `<div class="trainbox"><div class="t"><b>全問正解！</b> この調子で次へ進もう。</div></div>`;
   fillTable(cur.answers.map((a,i)=>({mark:a.correct, label:`問${i+1}　${a.q}`, img:a.img, read:a.read, answer:a.answer})));
   show("result");
 }
@@ -888,14 +1095,13 @@ function practiceType(q){
   return /[0-9０-９]/.test(q[1]) ? "similar" : "write";
 }
 function startTrain(){
-  const st = curSet();
-  const wrongQs = cur.answers.map((a,i)=>a.correct?null:st.qs[i]).filter(Boolean);
+  const wrongItems = cur.items.filter((it,i)=>!cur.answers[i].correct);
   const queue = [];
-  wrongQs.forEach(q=>{
-    if(practiceType(q)==="write"){ queue.push({ kind:"write", q, phase:"study", tries:0 }); return; }
-    if(!store.key){ queue.push({ kind:"retry", q }); return; }
-    const gen = genSimilar(q, store.simN);
-    for(let k=0;k<store.simN;k++) queue.push({ kind:"sim", base:q, k, gen, q:null });
+  wrongItems.forEach(w=>{
+    if(practiceType(w.q)==="write"){ queue.push({ kind:"write", q:w.q, st:w.st, phase:"study", tries:0 }); return; }
+    if(!store.key){ queue.push({ kind:"retry", q:w.q, st:w.st }); return; }
+    const gen = genSimilar(w.q, store.simN);
+    for(let k=0;k<store.simN;k++) queue.push({ kind:"sim", base:w.q, st:w.st, k, gen, q:null });
   });
   cur.mode = "train"; cur.queue = queue; cur.tpos = 0;
   document.getElementById("qTag").textContent = curSubj().name + "　弱点トレーニング";
@@ -914,7 +1120,7 @@ JSONのみ:{"items":[{"q":"問題文","a":"正解"}]}`;
   }catch(e){ return []; }
 }
 async function renderTrain(){
-  const it = cur.queue[cur.tpos], st = curSet();
+  const it = cur.queue[cur.tpos];
   document.getElementById("qCount").textContent = `${cur.tpos+1} / ${cur.queue.length}`;
   document.getElementById("qProg").style.width = (cur.tpos/cur.queue.length*100)+"%";
   const qt = document.getElementById("qText"), qs = document.getElementById("qSetName");
@@ -949,7 +1155,7 @@ async function renderTrain(){
   qt.innerHTML = it.q[0];
 }
 async function gradeWrite(){
-  const it = cur.queue[cur.tpos], st = curSet(), N = store.writeN;
+  const it = cur.queue[cur.tpos], N = store.writeN;
   const img = exportImage();
   locked = true; document.getElementById("padWrap").classList.add("locked");
   const gb = document.getElementById("gradeBtn"); gb.disabled = true;
@@ -967,7 +1173,7 @@ async function gradeWrite(){
   try{
     const prompt =
 `1行に1つずつ書かれた手書き文字を、上の行から順に一字一句そのまま書き起こす。誤字・つづり誤りも直さず、推測で補わない。読めない字は?。
-文字種:${st.hint||"漢字・ひらがな・カタカナ・英字"}
+文字種:${it.st.hint||"漢字・ひらがな・カタカナ・英字"}
 JSONのみ:{"lines":["1行目","2行目"]}`;
     const r = await callGemini((store.modelRead||"gemini-flash-latest").trim(), prompt, img, 300);
     lines = (r.lines||[]).map(String).filter(l=>l.trim());
@@ -1005,9 +1211,9 @@ function finishTrain(){
   setPadRows(0);
   const items = cur.queue.filter(it=>it.rec);
   const ok = items.filter(it=>it.rec.correct).length;
-  document.getElementById("rTitle").textContent = `${curSubj().name}　第${cur.set+1}回　弱点トレーニング`;
+  document.getElementById("rTitle").textContent = `${curSubj().name}　${setTitle()}　弱点トレーニング`;
   document.getElementById("rScore").innerHTML = `${ok}<small> / ${items.length}</small>`;
-  document.getElementById("rBest").textContent = ok===items.length ? "全部クリア！ 弱点をつぶせました。" : "まだ不安なものは、時間をおいてもう一度このセットに挑戦しよう。";
+  document.getElementById("rBest").textContent = ok===items.length ? "全部クリア！ 弱点をつぶせました。" : "まだ不安なものは、8日目以降の「今日の10問」で優先して出題されます。";
   document.getElementById("rTrain").innerHTML = "";
   fillTable(items.map(it=>({ mark:it.rec.correct,
     label:(it.kind==="write"?"【書き取り】":it.kind==="sim"?"【類題】":"【再挑戦】")+it.q[0],
@@ -1044,7 +1250,8 @@ function saveSettings(){
   store.simN = +document.getElementById("sSimN").value;
   save(); closeSettings(); renderHome();
 }
-function resetScores(){ if(confirm("すべての成績を消去しますか？")){ store.best={}; save(); renderHome(); } }
+function resetPlan(){ if(confirm("毎日のメニューを1日目からやり直しますか？（各回の成績は残ります）")){ store.plan={day:1,date:"",done:{}}; save(); closeSettings(); renderHome(); } }
+function resetScores(){ if(confirm("すべての成績を消去しますか？")){ store.best={}; store.qstat={}; store.plan={day:1,date:"",done:{}}; save(); renderHome(); } }
 
 renderHome();
 </script>
