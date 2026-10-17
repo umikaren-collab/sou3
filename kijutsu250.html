@@ -219,6 +219,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
       <button class="btn" onclick="stopSpeak()">■ 止める</button>
     </div>
     <div id="eText" class="etext"></div>
+    <div id="eShare" class="ectl" style="margin-top:12px"></div>
   </div>
   <div id="eNext"></div>
 </div>
@@ -282,6 +283,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
     <p>若い女性の自然な声（Nanami）は、Microsoft Edgeで開くと使えます。Chromeでは「Google 日本語」が女性の声です。</p>
     <div class="chk"><input type="checkbox" id="sPen"><span>ペンのみで書く（手のひら・指のタッチを無視）</span></div>
     <p>APIキーはこの端末のブラウザ内にだけ保存され、HTMLファイルには含まれません。</p>
+    <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--sub);font-size:14px">上級者向け：スプレッドシートへの自動送信</summary>
     <label>記録の送信先（Google Apps Script のウェブアプリURL）
       <input type="text" id="sSync" placeholder="https://script.google.com/macros/s/..../exec">
     </label>
@@ -289,7 +291,8 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
       <input type="text" id="sSyncToken" placeholder="空欄でも可">
     </label>
     <div style="margin-top:8px"><button class="btn" onclick="testSync()">📤 テスト送信</button></div>
-    <p>URLを入れると、毎日の点数・時間・まちがえた単元・評価が保護者のスプレッドシートに自動で送られます。</p>
+    <p>URLを入れると、毎日の点数・時間・まちがえた単元・評価が保護者のスプレッドシートに自動で送られます（設定しなくても使えます）。</p>
+    </details>
     <div class="acts">
       <button class="btn" onclick="resetPlan()">今日の進み具合をリセット</button>
       <button class="btn" onclick="resetScores()">成績をリセット</button>
@@ -1416,6 +1419,7 @@ async function openEval(){
   const pd = prevDayDate(), prev = pd ? dayStats(pd) : null;
   document.getElementById("eTitle").textContent = `今日の評価　${mdLabel(todayStr())}（${WD[parseDate(todayStr()).getDay()]}）`;
   document.getElementById("eExtra").innerHTML = "";
+  document.getElementById("eShare").innerHTML = "";
   document.getElementById("eStats").innerHTML = `<thead><tr><th>教科</th><th>点数</th><th>時間</th><th>まちがえた単元</th></tr></thead><tbody>${
     today.教科別.map(x=>`<tr><td>${x.教科}</td><td style="font-weight:700">${x.点数} / 10</td><td>${x.制限秒?(x.時間切れ?"時間切れ":fmt(x.時間秒)+" / "+fmt(x.制限秒)):fmt(x.時間秒)}</td><td>${[...new Set(x.まちがえた問題.map(w=>w.単元))].join("、")||"—"}</td></tr>`).join("")
   }<tr><td><b>合計</b></td><td style="font-weight:800">${today.合計} / 50</td><td colspan="2">${prev?`前回（${mdLabel(prev.日付)}）は ${prev.合計} / 50`:""}</td></tr></tbody>`;
@@ -1584,6 +1588,7 @@ async function openWeekEval(){
   document.getElementById("eNext").innerHTML = p.weekReview ? "" :
     `<div class="trainbox" style="margin-top:14px"><div class="t"><b>週末の弱点補強（約30分）</b><br>今週2回以上まちがえた問題と抜き打ちチェックを記述で。後半は4択で仕上げます。</div>
      <button class="btn primary" onclick="startWeekReview()">② 週末の弱点補強へ →</button></div>`;
+  document.getElementById("eShare").innerHTML = `<button class="btn primary" onclick="shareWeek()">📤 おうちの人にLINEで送る</button><button class="btn" onclick="copyWeek()">📋 文章をコピー</button>`;
   show("evalv");
   const h = histToday(), box = document.getElementById("eText");
   if(h.weekText){ box.textContent = h.weekText; p.weekEval="done"; save(); return; }
@@ -1646,6 +1651,37 @@ function startWeekReview(){
   const mcs = shuffle(mcPool).slice(0,16).map(x=>Object.assign({}, x, { mc:true, pop:false }));
   if(!written.length && !mcs.length){ alert("今週は補強する問題がありません。すばらしい！"); planState().weekReview="done"; save(); renderHome(); return; }
   startSession({ kind:"week", si:-1, set:-1, items:written.concat(mcs), daily:true });
+}
+
+/* ============================================================
+   1週間の結果をLINEなどで送る（設定不要）
+   ============================================================ */
+function weekReportText(){
+  const mon = mondayOf(todayStr()), cs = weekStats(mon), ps = weekStats(addDays(mon,-7)), h = store.hist[todayStr()]||{};
+  if(!cs) return "";
+  const pv = (a,b,u)=> b==null ? "" : `（先週 ${b}${u}）`;
+  const lines = [
+    `【手書き一問一答】${cs.週}の結果`,
+    `取り組んだ日数：${cs.取り組んだ日数}日`,
+    `正答率：${cs.全体の正答率}%${pv(cs.全体の正答率, ps&&ps.全体の正答率, "%")}`,
+    cs.教科別.map(x=>`${x.教科}${x.正答率==null?"—":x.正答率+"%"}`).join("　"),
+    `苦手な問題：${cs.週末の苦手な問題数}問${pv(0, ps&&ps.週末の苦手な問題数, "問")}`,
+    cs.定着率!=null ? `定着率（まちがえた問題に再挑戦して正解）：${cs.定着率}%` : "",
+    cs.まちがいの多い単元.length ? `まちがいの多い単元：${cs.まちがいの多い単元.slice(0,3).map(u=>u.単元).join("、")}` : "",
+    h.week ? `週末の弱点補強：記述 ${h.week.w[1]}/${h.week.w[0]}・4択 ${h.week.c[1]}/${h.week.c[0]}` : "",
+    h.weekText ? `\n― 先生のひとこと ―\n${h.weekText}` : ""
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+async function shareWeek(){
+  const text = weekReportText(); if(!text) return;
+  if(navigator.share){ try{ await navigator.share({ title:"1週間の結果", text }); return; }catch(e){ if(e && e.name==="AbortError") return; } }
+  window.open("https://line.me/R/share?text="+encodeURIComponent(text), "_blank");
+}
+async function copyWeek(){
+  const text = weekReportText(); if(!text) return;
+  try{ await navigator.clipboard.writeText(text); alert("コピーしました。LINEやメールに貼り付けて送ってください。"); }
+  catch(e){ prompt("この文章をコピーしてください", text); }
 }
 
 /* ============================================================
