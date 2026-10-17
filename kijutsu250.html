@@ -85,6 +85,22 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 .mbox .chk input{width:22px;height:22px}
 .mbox .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .mbox p{font-size:13px;color:var(--sub);line-height:1.6;margin-top:8px}
+.timer{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;padding:5px 12px;border-radius:9px;background:#fff;border:2px solid var(--line);min-width:84px;text-align:center}
+.timer.warn{color:var(--warn);border-color:var(--warn)}
+.timer.over{color:#fff;background:var(--ng);border-color:var(--ng)}
+.timer.paused{opacity:.55}
+.autobar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:10px}
+.autobar i{display:block;height:100%;width:0;background:var(--ok);animation:fill linear forwards}
+@keyframes fill{to{width:100%}}
+.ansbox{margin-top:12px;padding:14px 16px;border-radius:12px;background:#fff6e5;border:2px dashed var(--warn);font-size:30px;font-weight:800;letter-spacing:.06em;text-align:center}
+.inst{margin-top:8px;font-size:16px;color:var(--sub)}
+.lines{margin-top:6px;font-size:17px;line-height:1.8}
+.trainbox{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:14px;border:3px solid var(--c);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.trainbox .t{flex:1;min-width:220px;font-size:15px;line-height:1.6}
+.trainbox .t b{font-size:18px}
+.mbox{max-height:92vh;overflow:auto}
+.mbox select{width:100%;padding:9px;font-size:16px;border:2px solid var(--line);border-radius:8px;margin-top:4px;background:#fff}
+.mbox .two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
 @media (max-width:640px){.qtext{font-size:19px}canvas#pad{height:260px}}
 </style>
 </head>
@@ -110,6 +126,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
     <span class="tag" id="qTag"></span>
     <div class="prog"><i id="qProg"></i></div>
     <span class="qcount" id="qCount"></span>
+    <span class="timer hidden" id="qTimer"></span>
   </div>
   <div class="qcard">
     <div class="qsetname" id="qSetName"></div>
@@ -123,7 +140,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
     <button class="btn" onclick="undo()">↶ 1画もどす</button>
     <button class="btn" onclick="clearPad()">🗑 全部消す</button>
     <div class="sp"></div>
-    <button class="btn primary" id="gradeBtn" onclick="grade()">答え合わせ</button>
+    <button class="btn primary" id="gradeBtn" onclick="onGrade()">答え合わせ</button>
   </div>
   <div id="resBox"></div>
 </div>
@@ -133,12 +150,13 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
   <header>
     <h1 id="rTitle"></h1>
     <div style="display:flex;gap:8px">
-      <button class="btn" onclick="startSet(cur.subj,cur.set)">もう一度</button>
+      <button class="btn" onclick="startSet(cur.subj,cur.set)">このセットをもう一度</button>
       <button class="btn primary" onclick="goHome()">ホームへ</button>
     </div>
   </header>
   <div class="big" id="rScore"></div>
   <div style="text-align:center;margin-bottom:14px;color:var(--sub)" id="rBest"></div>
+  <div id="rTrain"></div>
   <table class="rv"><thead><tr><th></th><th>問題</th><th>あなたの答え</th><th>正解</th></tr></thead><tbody id="rBody"></tbody></table>
 </div>
 
@@ -160,6 +178,27 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
       <option value="gemini-flash-lite-latest">最安（Flash-Lite）</option>
     </datalist>
     <p>漢字・英単語は1文字違いも見逃さないよう、正解を見せずに書き起こし、プログラムで照合します。</p>
+    <div class="two">
+      <label>制限時間
+        <select id="sTime"><option value="0">なし</option><option value="70">短め（70%）</option><option value="85">やや短め（85%）</option><option value="100">標準</option><option value="120">やや長め（120%）</option><option value="150">長め（150%）</option></select>
+      </label>
+      <label>時間切れのとき
+        <select id="sTimeUp"><option value="stop">残りを×にして終了</option><option value="go">最後まで解く（超過を表示）</option></select>
+      </label>
+    </div>
+    <p>標準の制限時間（10問）：国語・英語・社会・理科 3分／理科「計算・応用」5分／数学 5分（方程式のみ6分）。AIの採点中と正解表示中は止まります。</p>
+    <label>正解したとき、次の問題へ自動で進むまで
+      <select id="sAuto"><option value="0">自動で進まない</option><option value="1">1秒</option><option value="1.5">1.5秒</option><option value="2">2秒</option><option value="3">3秒</option></select>
+    </label>
+    <div class="two">
+      <label>弱点トレーニング：書き取り
+        <select id="sWriteN"><option value="3">3回書く</option><option value="5">5回書く</option></select>
+      </label>
+      <label>弱点トレーニング：類題
+        <select id="sSimN"><option value="1">1問ずつ</option><option value="2">2問ずつ</option><option value="3">3問ずつ</option><option value="5">5問ずつ</option></select>
+      </label>
+    </div>
+    <p>漢字・英単語・用語をまちがえたら「見て覚える→見ないで書く」、数学・計算をまちがえたらAIが作る類題を解きます。</p>
     <div class="chk"><input type="checkbox" id="sPen"><span>ペンのみで書く（手のひら・指のタッチを無視）</span></div>
     <p>APIキーはこの端末のブラウザ内にだけ保存され、HTMLファイルには含まれません。</p>
     <div class="acts">
@@ -493,10 +532,23 @@ const SUBJECTS = [
    保存データ
    ============================================================ */
 const STORE_KEY = "kijutsu250_v1";
-let store = { key:"", modelRead:"gemini-flash-latest", modelJudge:"gemini-flash-lite-latest", penOnly:false, best:{} };
+let store = { key:"", modelRead:"gemini-flash-latest", modelJudge:"gemini-flash-lite-latest", penOnly:false, best:{},
+  timeScale:100, timeUp:"stop", autoNext:1.5, writeN:3, simN:2 };
 function load(){ try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)||"null"); if(s) store = Object.assign(store,s); }catch(e){} }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 load();
+
+/* ============================================================
+   制限時間（10問あたりの標準秒数）
+   ============================================================ */
+function baseTime(si,i){
+  const id = SUBJECTS[si].id;
+  if(id==="sugaku") return i===1 ? 360 : 300;   // 数学5分（方程式6分）
+  if(id==="rika" && i===4) return 300;           // 理科「計算・応用」5分
+  return 180;                                     // その他3分
+}
+function setLimit(si,i){ return store.timeScale>0 ? Math.round(baseTime(si,i)*store.timeScale/100) : 0; }
+function fmt(sec){ const neg = sec<0; sec = Math.abs(Math.ceil(sec)); return (neg?"−":"")+Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
 
 /* ============================================================
    ホーム
@@ -512,10 +564,10 @@ function renderHome(){
     d.innerHTML = `<h2>${s.name}<span><b>${sum}</b> / 50点</span></h2><div class="sets"></div>`;
     const sets = d.querySelector(".sets");
     s.sets.forEach((st,i)=>{
-      const sc = b[i];
+      const sc = b[i], lim = setLimit(si,i);
       const bt = document.createElement("button");
       bt.className = "setbtn"+(sc!=null?" done":"");
-      bt.innerHTML = `第${i+1}回<small>${st.name}</small><span class="sc">${sc!=null?sc+"/10":"—"}</span>`;
+      bt.innerHTML = `第${i+1}回<small>${st.name}</small><span class="sc">${sc!=null?sc+"/10":"—"}</span>${lim?`<small>⏱${fmt(lim)}</small>`:""}`;
       bt.onclick = ()=>startSet(si,i);
       sets.appendChild(bt);
     });
@@ -528,37 +580,86 @@ function renderHome(){
 }
 
 /* ============================================================
-   出題
+   画面・状態
    ============================================================ */
 let cur = null;
 function show(id){ ["home","quiz","result"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+function curSubj(){ return SUBJECTS[cur.subj]; }
+function curSet(){ return SUBJECTS[cur.subj].sets[cur.set]; }
+
 function startSet(si,i){
-  const s = SUBJECTS[si], st = s.sets[i];
-  cur = { subj:si, set:i, idx:0, answers:[] };
+  const s = SUBJECTS[si];
+  cancelAuto(); timerReset(setLimit(si,i));
+  cur = { mode:"test", subj:si, set:i, idx:0, answers:[] };
   document.getElementById("quiz").style.setProperty("--c",s.color);
+  document.getElementById("result").style.setProperty("--c",s.color);
   document.getElementById("qTag").textContent = s.name;
-  show("quiz"); resizePad(); renderQ();
+  show("quiz"); setPadRows(0); renderQ();
+}
+function quitQuiz(){ if(confirm("中断してホームに戻りますか？")) goHome(); }
+function goHome(){ cancelAuto(); timerPause(); show("home"); renderHome(); }
+
+/* 問題表示の共通部分 */
+function prepareQ(){
+  document.getElementById("resBox").innerHTML = "";
+  document.getElementById("tools").classList.remove("hidden");
+  document.getElementById("padWrap").classList.remove("hidden","locked");
+  locked = false; clearPad();
+  const gb = document.getElementById("gradeBtn"); gb.disabled=false; gb.textContent="答え合わせ"; gb.onclick = onGrade;
 }
 function renderQ(){
-  const s = SUBJECTS[cur.subj], st = s.sets[cur.set], q = st.qs[cur.idx];
+  const st = curSet(), q = st.qs[cur.idx];
   document.getElementById("qSetName").textContent = `第${cur.set+1}回　${st.name}`;
   document.getElementById("qText").innerHTML = `<span style="color:var(--c)">問${cur.idx+1}</span>　${q[0]}`;
   document.getElementById("qCount").textContent = `${cur.idx+1} / 10`;
   document.getElementById("qProg").style.width = (cur.idx*10)+"%";
-  document.getElementById("resBox").innerHTML = "";
-  document.getElementById("tools").classList.remove("hidden");
-  document.getElementById("padWrap").classList.remove("locked");
-  locked = false; clearPad();
-  const gb = document.getElementById("gradeBtn"); gb.disabled=false; gb.textContent="答え合わせ";
+  prepareQ(); timerStart();
 }
-function quitQuiz(){ if(confirm("このセットを中断してホームに戻りますか？")) goHome(); }
-function goHome(){ show("home"); renderHome(); }
+
+/* ============================================================
+   タイマー（解いている間だけ進む）
+   ============================================================ */
+let T = { limit:0, used:0, startAt:0, running:false, iv:null };
+function timerReset(limit){ timerPause(); T = { limit, used:0, startAt:0, running:false, iv:null }; tick(); }
+function elapsed(){ return T.used + (T.running ? (performance.now()-T.startAt)/1000 : 0); }
+function timerStart(){
+  if(!T.limit || T.running || !cur || cur.mode!=="test") { tick(); return; }
+  T.running = true; T.startAt = performance.now(); T.iv = setInterval(tick, 200); tick();
+}
+function timerPause(){
+  if(T.running){ T.used += (performance.now()-T.startAt)/1000; T.running = false; }
+  clearInterval(T.iv); T.iv = null; tick();
+}
+function tick(){
+  const el = document.getElementById("qTimer");
+  if(!T.limit || !cur || cur.mode!=="test"){ el.classList.add("hidden"); return; }
+  const left = T.limit - elapsed();
+  el.classList.remove("hidden");
+  el.textContent = "⏱ " + fmt(left);
+  el.classList.toggle("warn", left<=30 && left>0);
+  el.classList.toggle("over", left<=0);
+  el.classList.toggle("paused", !T.running);
+  if(left<=0 && T.running && store.timeUp==="stop") timeUp();
+}
+function timeUp(){
+  timerPause(); cancelAuto();
+  const st = curSet();
+  for(let i=cur.idx;i<10;i++){
+    const a = cur.answers[i];
+    if(!a || a.correct===null){
+      const q = st.qs[i];
+      cur.answers[i] = { q:q[0], answer:q[1], img:null, read:"（時間切れ）", correct:false, comment:"" };
+    }
+  }
+  cur.timedOut = true; finishSet();
+}
 
 /* ============================================================
    手書きパッド
    ============================================================ */
 const pad = document.getElementById("pad"), ctx = pad.getContext("2d");
 let strokes = [], curStroke = null, locked = false, activePointer = null;
+function setPadRows(n){ pad.style.height = n ? (n*83+30)+"px" : ""; resizePad(); }
 function resizePad(){
   const r = pad.getBoundingClientRect(), dpr = window.devicePixelRatio||1;
   pad.width = Math.round(r.width*dpr); pad.height = Math.round(r.height*dpr);
@@ -597,13 +698,12 @@ pad.addEventListener("pointercancel",endStroke);
 function undo(){ if(locked) return; strokes.pop(); redraw(); }
 function clearPad(){ if(locked) return; strokes=[]; redraw(); }
 
-/* 書いた部分だけを白背景で切り出して画像化 */
+/* 書いた部分だけを白背景で切り出して画像化（長辺768px以内でトークン節約） */
 function exportImage(){
   let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
   strokes.forEach(s=>s.forEach(p=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);}));
   const m=20; minX-=m;minY-=m;maxX+=m;maxY+=m;
   const w=maxX-minX, h=maxY-minY;
-  // 長辺768px以内に縮小（画像トークンを最小単位に抑える）
   const scale = Math.min(1.5, 768/Math.max(w,h));
   const c = document.createElement("canvas"); c.width=Math.round(w*scale); c.height=Math.round(h*scale);
   const x = c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
@@ -617,42 +717,21 @@ function exportImage(){
 }
 
 /* ============================================================
-   採点
+   Gemini呼び出し・照合
    ============================================================ */
-function stripTags(h){ const d=document.createElement("div"); d.innerHTML=h.replace(/<br>/g," / "); return d.textContent; }
-async function grade(){
-  if(!strokes.length){ alert("答えを書いてから答え合わせをしてください。"); return; }
-  const s = SUBJECTS[cur.subj], st = s.sets[cur.set], q = st.qs[cur.idx];
-  const img = exportImage();
-  locked = true; document.getElementById("padWrap").classList.add("locked");
-  const gb = document.getElementById("gradeBtn"); gb.disabled = true;
-  const rec = { q:q[0], answer:q[1], img, read:"", correct:null, comment:"", ai:false };
-  cur.answers[cur.idx] = rec;
-
-  if(store.key){
-    gb.innerHTML = '<span class="spinner"></span>採点中…';
-    try{
-      const r = await aiGrade(s, st, q, img);
-      rec.read = r.read||""; rec.correct = !!r.correct; rec.comment = r.comment||""; rec.ai = true;
-    }catch(err){
-      rec.comment = "AI採点に失敗しました（"+err.message+"）。自己採点してください。";
-    }
-  }
-  document.getElementById("tools").classList.add("hidden");
-  renderResult(rec);
-}
-/* Gemini呼び出し共通 */
-async function callGemini(model, prompt, img, maxTok){
-  const body = {
-    contents:[{ parts:[ {text:prompt}, {inline_data:{mime_type:"image/jpeg", data:img.split(",")[1]}} ] }],
-    generationConfig:{ temperature:0, responseMimeType:"application/json", maxOutputTokens:maxTok,
-      thinkingConfig:{ thinkingLevel:"minimal" } }
-  };
+function stripTags(h){ const d=document.createElement("div"); d.innerHTML=String(h).replace(/<br>/g," / "); return d.textContent; }
+async function callGemini(model, prompt, img, maxTok, thinking){
+  const parts = [{text:prompt}];
+  if(img) parts.push({inline_data:{mime_type:"image/jpeg", data:img.split(",")[1]}});
+  const body = { contents:[{parts}],
+    generationConfig:{ temperature: img?0:0.7, responseMimeType:"application/json", maxOutputTokens:maxTok,
+      thinkingConfig:{ thinkingLevel: thinking||"minimal" } } };
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const call = b => fetch(url,{ method:"POST", headers:{"Content-Type":"application/json","x-goog-api-key":store.key}, body:JSON.stringify(b) });
   let res = await call(body);
   if(res.status===400){
-    delete body.generationConfig.thinkingConfig; body.generationConfig.maxOutputTokens = 1024;
+    // 思考レベル指定に対応しないモデルの場合は、指定を外して再送
+    delete body.generationConfig.thinkingConfig; body.generationConfig.maxOutputTokens = Math.max(1024,maxTok);
     res = await call(body);
   }
   if(!res.ok){ let m="HTTP "+res.status; try{ const j=await res.json(); m=j.error?.message?.slice(0,80)||m; }catch(e){} throw new Error(m); }
@@ -661,74 +740,102 @@ async function callGemini(model, prompt, img, maxTok){
   const mm = t.match(/\{[\s\S]*\}/); if(!mm) throw new Error("応答を読み取れません");
   return JSON.parse(mm[0]);
 }
-
 /* 照合用の正規化（全角英数→半角、空白・句読点除去、英字は小文字） */
-function norm(x){
-  return String(x||"").normalize("NFKC").replace(/[\s　.,。、・「」『』"'’]/g,"").toLowerCase();
-}
+function norm(x){ return String(x||"").normalize("NFKC").replace(/[\s　.,。、・「」『』"'’]/g,"").toLowerCase(); }
 /* 完全一致判定：送り仮名つきで書いた場合も許可（例：険＋しい） */
 function exactMatch(read, q){
   const r = norm(read); if(!r || r.includes("?")||r.includes("？")) return false;
-  const after = norm(stripTags((q[0].split("</em>")[1])||""));
+  const after = norm(stripTags((String(q[0]).split("</em>")[1])||""));
   return q.slice(1).some(a=>{
     const n = norm(a);
     if(r===n) return true;
     return r.startsWith(n) && after.startsWith(r.slice(n.length)) && /^[ぁ-ゟ]+$/.test(r.slice(n.length));
   });
 }
-
-async function aiGrade(s, st, q, img){
-  /* ① 漢字・英単語：正解を見せずに書き起こし → プログラムで1文字ずつ照合 */
+async function aiGrade(st, q, img){
+  /* ① 漢字・英単語：正解を見せずに書き起こし → プログラムで照合 */
   if(st.mode==="exact"){
-    const model = (store.modelRead||"gemini-flash-latest").trim();
     const prompt =
 `手書き文字を一字一句そのまま書き起こす。誤字・脱字・つづり誤りも直さず、推測で補わない。読めない字は?。
 文字種:${st.hint}
 JSONのみ:{"read":"書き起こし","unclear":true/false}`;
-    const r = await callGemini(model, prompt, img, 120);
+    const r = await callGemini((store.modelRead||"gemini-flash-latest").trim(), prompt, img, 120);
     const ok = exactMatch(r.read, q);
     return { read:r.read, correct:ok,
       comment: (r.unclear ? "読み取りに自信がありません。判定を確認してください。" : (ok ? "正解！" : `正しくは「${q[1]}」`)) };
   }
   /* ② 数式・用語：正解を渡して意味で判定 */
-  const model = (store.modelJudge||"gemini-flash-lite-latest").trim();
-  // コスト削減：指示文を最小限にし、返答も短く固定
   const prompt =
 `中3の手書き解答を採点。画像の文字を推測せず読み取り、基準に従い判定。
 問題:${stripTags(q[0])}
 正解:${q.slice(1).join("／")}
 基準:${st.rule}
 JSONのみ:{"read":"読取","correct":true/false,"comment":"20字以内"}`;
-  return await callGemini(model, prompt, img, 200);
+  return await callGemini((store.modelJudge||"gemini-flash-lite-latest").trim(), prompt, img, 200);
+}
+
+/* ============================================================
+   答え合わせ（本番・トレーニング共通）
+   ============================================================ */
+function curQ(){ return cur.mode==="test" ? curSet().qs[cur.idx] : cur.queue[cur.tpos].q; }
+async function onGrade(){
+  if(!strokes.length){ alert("答えを書いてから答え合わせをしてください。"); return; }
+  if(cur.mode==="train" && cur.queue[cur.tpos].kind==="write") return gradeWrite();
+  timerPause();
+  const st = curSet(), q = curQ();
+  const img = exportImage();
+  locked = true; document.getElementById("padWrap").classList.add("locked");
+  const gb = document.getElementById("gradeBtn"); gb.disabled = true;
+  const rec = { q:q[0], answer:q[1], img, read:"", correct:null, comment:"" };
+  if(cur.mode==="test") cur.answers[cur.idx] = rec; else cur.queue[cur.tpos].rec = rec;
+  if(store.key){
+    gb.innerHTML = '<span class="spinner"></span>採点中…';
+    try{
+      const r = await aiGrade(st, q, img);
+      rec.read = r.read||""; rec.correct = !!r.correct; rec.comment = r.comment||"";
+    }catch(err){ rec.comment = "AI採点に失敗しました（"+err.message+"）。自己採点してください。"; }
+  }
+  document.getElementById("tools").classList.add("hidden");
+  renderResult(rec);
+}
+function nextLabel(){
+  if(cur.mode==="test") return cur.idx===9 ? "結果を見る" : "次の問題へ →";
+  return cur.tpos>=cur.queue.length-1 ? "トレーニング終了" : "次へ →";
 }
 function renderResult(rec){
   const box = document.getElementById("resBox");
-  const isLast = cur.idx===9;
-  const nextLabel = isLast ? "結果を見る" : "次の問題へ →";
   if(rec.correct===null){
     box.innerHTML = `<div class="res">
       <div class="row"><b>正解</b><span style="font-size:22px;font-weight:700">${rec.answer}</span></div>
-      ${rec.comment?`<div class="cmt">${rec.comment}</div>`:""}
+      ${rec.comment?`<div class="cmt">${esc(rec.comment)}</div>`:""}
       <div class="cmt">自分の答えと比べて、○か×を選んでください。</div>
       <div class="fix"><button class="btn ok" onclick="selfMark(true)">○ 正解だった</button><button class="btn ng" onclick="selfMark(false)">× まちがえた</button></div>
     </div>`;
     return;
   }
+  const auto = rec.correct && store.autoNext>0;
   box.innerHTML = `<div class="res ${rec.correct?"ok":"ng"}">
     <div><span class="mark">${rec.correct?"○":"×"}</span><span style="font-weight:700">${rec.correct?"正解！":"不正解"}</span></div>
     <div class="row"><b>読み取り</b>${esc(rec.read)||"（読み取れず）"}</div>
     <div class="row"><b>正解</b><span style="font-weight:700">${rec.answer}</span></div>
     ${rec.comment?`<div class="cmt">${esc(rec.comment)}</div>`:""}
     <div class="fix">
-      <button class="btn primary" onclick="nextQ()">${nextLabel}</button>
+      <button class="btn primary" onclick="nextQ()">${nextLabel()}</button>
       <button class="btn" onclick="flipMark()">${rec.correct?"読み間違い：×にする":"読み間違い：○にする"}</button>
     </div>
+    ${auto?`<div class="autobar"><i style="animation-duration:${store.autoNext}s"></i></div>`:""}
   </div>`;
+  if(auto) autoTimer = setTimeout(nextQ, store.autoNext*1000);
 }
+let autoTimer = null;
+function cancelAuto(){ clearTimeout(autoTimer); autoTimer = null; }
 function esc(s){ return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-function selfMark(ok){ const r=cur.answers[cur.idx]; r.correct=ok; r.read=r.read||"（自己採点）"; nextQ(); }
-function flipMark(){ const r=cur.answers[cur.idx]; r.correct=!r.correct; r.comment="（判定を手動で修正）"; renderResult(r); }
+function curRec(){ return cur.mode==="test" ? cur.answers[cur.idx] : cur.queue[cur.tpos].rec; }
+function selfMark(ok){ const r=curRec(); r.correct=ok; r.read=r.read||"（自己採点）"; nextQ(); }
+function flipMark(){ cancelAuto(); const r=curRec(); r.correct=!r.correct; r.comment="（判定を手動で修正）"; renderResult(r); cancelAuto(); }
 function nextQ(){
+  cancelAuto();
+  if(cur.mode==="train") return trainNext();
   if(cur.idx<9){ cur.idx++; renderQ(); }
   else finishSet();
 }
@@ -737,22 +844,175 @@ function nextQ(){
    結果
    ============================================================ */
 function finishSet(){
-  const s = SUBJECTS[cur.subj], st = s.sets[cur.set];
+  timerPause(); cancelAuto();
+  const s = curSubj(), st = curSet();
   const score = cur.answers.filter(a=>a&&a.correct).length;
   store.best[s.id] = store.best[s.id]||{};
   const prev = store.best[s.id][cur.set];
   const isNew = prev==null || score>prev;
   if(isNew) store.best[s.id][cur.set] = score;
   save();
-  const r = document.getElementById("result"); r.style.setProperty("--c",s.color);
   document.getElementById("rTitle").textContent = `${s.name}　第${cur.set+1}回　${st.name}`;
   document.getElementById("rScore").innerHTML = `${score}<small> / 10点</small>`;
-  document.getElementById("rBest").textContent = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
-  document.getElementById("rBody").innerHTML = cur.answers.map((a,i)=>`<tr>
-    <td class="${a.correct?"m-ok":"m-ng"}">${a.correct?"○":"×"}</td>
-    <td>問${i+1}　${a.q}</td>
-    <td><img src="${a.img}" alt=""><div style="font-size:13px;color:var(--sub)">${esc(a.read)}</div></td>
+  let line = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
+  if(T.limit){
+    const used = elapsed();
+    line += cur.timedOut ? `　／　⏱ 時間切れ（制限 ${fmt(T.limit)}）`
+      : `　／　⏱ ${fmt(used)}（制限 ${fmt(T.limit)}${used>T.limit?`、${fmt(used-T.limit)} オーバー`:""}）`;
+  }
+  document.getElementById("rBest").textContent = line;
+  const wrong = cur.answers.filter(a=>!a.correct).length;
+  document.getElementById("rTrain").innerHTML = wrong
+    ? `<div class="trainbox"><div class="t"><b>まちがえた ${wrong}問 をすぐに復習しよう</b><br>
+        漢字・単語・用語は「見て覚える→見ないで${store.writeN}回書く」、計算問題は類題を${store.simN}問ずつ解きます。</div>
+        <button class="btn primary" onclick="startTrain()">弱点トレーニングを始める →</button></div>`
+    : `<div class="trainbox"><div class="t"><b>全問正解！</b> この調子で次の回へ進もう。</div></div>`;
+  fillTable(cur.answers.map((a,i)=>({mark:a.correct, label:`問${i+1}　${a.q}`, img:a.img, read:a.read, answer:a.answer})));
+  show("result");
+}
+function fillTable(rows){
+  document.getElementById("rBody").innerHTML = rows.map(a=>`<tr>
+    <td class="${a.mark?"m-ok":"m-ng"}">${a.mark?"○":"×"}</td>
+    <td>${a.label}</td>
+    <td>${a.img?`<img src="${a.img}" alt="">`:""}<div style="font-size:13px;color:var(--sub)">${esc(a.read)}</div></td>
     <td style="font-weight:700">${a.answer}</td></tr>`).join("");
+}
+
+/* ============================================================
+   弱点トレーニング
+   - 書き取り型（漢字・英単語・用語）：見て覚える → 見ないでN回書く
+   - 類題型（数学・数値の答え）：AIが作った類題をN問解く
+   ============================================================ */
+function practiceType(q){
+  if(curSubj().id==="sugaku") return "similar";
+  return /[0-9０-９]/.test(q[1]) ? "similar" : "write";
+}
+function startTrain(){
+  const st = curSet();
+  const wrongQs = cur.answers.map((a,i)=>a.correct?null:st.qs[i]).filter(Boolean);
+  const queue = [];
+  wrongQs.forEach(q=>{
+    if(practiceType(q)==="write"){ queue.push({ kind:"write", q, phase:"study", tries:0 }); return; }
+    if(!store.key){ queue.push({ kind:"retry", q }); return; }
+    const gen = genSimilar(q, store.simN);
+    for(let k=0;k<store.simN;k++) queue.push({ kind:"sim", base:q, k, gen, q:null });
+  });
+  cur.mode = "train"; cur.queue = queue; cur.tpos = 0;
+  document.getElementById("qTag").textContent = curSubj().name + "　弱点トレーニング";
+  tick(); show("quiz"); renderTrain();
+}
+async function genSimilar(q, n){
+  const prompt =
+`中3の高校入試対策。次の問題と同じ単元・同じ解き方・同じ難易度で、数値や語句を変えた類題を${n}問作る。
+条件：元の問題と答えが同じにならない。一問一答で、答えは短く手書きできる形。正解は必ず検算する。分数は約分、根号は簡単にする。
+元の問題:${stripTags(q[0])}
+元の正解:${q[1]}
+JSONのみ:{"items":[{"q":"問題文","a":"正解"}]}`;
+  try{
+    const r = await callGemini((store.modelRead||"gemini-flash-latest").trim(), prompt, null, 4096, "low");
+    return (r.items||[]).filter(x=>x&&x.q&&x.a);
+  }catch(e){ return []; }
+}
+async function renderTrain(){
+  const it = cur.queue[cur.tpos], st = curSet();
+  document.getElementById("qCount").textContent = `${cur.tpos+1} / ${cur.queue.length}`;
+  document.getElementById("qProg").style.width = (cur.tpos/cur.queue.length*100)+"%";
+  const qt = document.getElementById("qText"), qs = document.getElementById("qSetName");
+  prepareQ();
+
+  if(it.kind==="write"){
+    if(it.phase==="study"){
+      qs.textContent = "書き取り練習　①見て覚える";
+      qt.innerHTML = `${it.q[0]}<div class="ansbox">${it.q[1]}</div><div class="inst">正しい形をよく見て覚えよう。覚えたら「見ないで書く」へ。</div>`;
+      document.getElementById("padWrap").classList.add("hidden");
+      const gb = document.getElementById("gradeBtn"); gb.textContent = "覚えた → 見ないで書く";
+      gb.onclick = ()=>{ it.phase="write"; renderTrain(); };
+      return;
+    }
+    qs.textContent = `書き取り練習　②見ないで${store.writeN}回書く`;
+    qt.innerHTML = `${it.q[0]}<div class="inst">答えを <b>1行に1つずつ、${store.writeN}回</b> 書こう。</div>`;
+    setPadRows(store.writeN); clearPad();
+    return;
+  }
+  setPadRows(0);
+  if(it.kind==="sim" && !it.q){
+    qs.textContent = "類題を準備中…"; qt.innerHTML = '<span class="spinner" style="border-color:var(--c);border-top-color:transparent"></span> AIが類題を作っています';
+    const gb = document.getElementById("gradeBtn"); gb.disabled = true;
+    const items = await it.gen;
+    if(cur.mode!=="train" || cur.queue[cur.tpos]!==it) return;
+    const x = items[it.k];
+    if(x) it.q = [x.q, x.a];
+    else { it.kind = "retry"; it.q = it.base; }
+    return renderTrain();
+  }
+  qs.textContent = it.kind==="sim" ? `類題 ${it.k+1}（AI作成）` : "もう一度チャレンジ";
+  qt.innerHTML = it.q[0];
+}
+async function gradeWrite(){
+  const it = cur.queue[cur.tpos], st = curSet(), N = store.writeN;
+  const img = exportImage();
+  locked = true; document.getElementById("padWrap").classList.add("locked");
+  const gb = document.getElementById("gradeBtn"); gb.disabled = true;
+  const box = document.getElementById("resBox");
+  const retryBtns = `<button class="btn primary" onclick="rewrite()">もう一度覚え直す</button><button class="btn" onclick="giveUp()">次へ進む</button>`;
+  if(!store.key){
+    document.getElementById("tools").classList.add("hidden");
+    box.innerHTML = `<div class="res"><div class="row"><b>正解</b><span style="font-size:22px;font-weight:700">${it.q[1]}</span></div>
+      <div class="cmt">${N}回とも正しく書けたか確認しよう。</div>
+      <div class="fix"><button class="btn ok" onclick="writeDone(true)">○ 全部書けた</button><button class="btn ng" onclick="rewrite()">× もう一度</button></div></div>`;
+    return;
+  }
+  gb.innerHTML = '<span class="spinner"></span>確認中…';
+  let lines = [];
+  try{
+    const prompt =
+`1行に1つずつ書かれた手書き文字を、上の行から順に一字一句そのまま書き起こす。誤字・つづり誤りも直さず、推測で補わない。読めない字は?。
+文字種:${st.hint||"漢字・ひらがな・カタカナ・英字"}
+JSONのみ:{"lines":["1行目","2行目"]}`;
+    const r = await callGemini((store.modelRead||"gemini-flash-latest").trim(), prompt, img, 300);
+    lines = (r.lines||[]).map(String).filter(l=>l.trim());
+  }catch(err){
+    document.getElementById("tools").classList.add("hidden");
+    box.innerHTML = `<div class="res"><div class="cmt">AIの確認に失敗しました（${esc(err.message)}）。</div>
+      <div class="row"><b>正解</b><span style="font-weight:700">${it.q[1]}</span></div>
+      <div class="fix"><button class="btn ok" onclick="writeDone(true)">○ 全部書けた</button><button class="btn ng" onclick="rewrite()">× もう一度</button></div></div>`;
+    return;
+  }
+  const marks = lines.map(l=>exactMatch(l, it.q));
+  const okN = marks.filter(Boolean).length;
+  const pass = okN>=N;
+  it.rec = { q:it.q[0], answer:it.q[1], img, read:lines.join(" / "), correct:pass };
+  document.getElementById("tools").classList.add("hidden");
+  const auto = pass && store.autoNext>0;
+  box.innerHTML = `<div class="res ${pass?"ok":"ng"}">
+    <div><span class="mark">${pass?"○":"×"}</span><span style="font-weight:700">${pass?`${N}回とも正しく書けた！`:`正しく書けたのは ${okN} / ${N}回`}</span></div>
+    <div class="lines">${lines.map((l,i)=>`${marks[i]?"○":"×"} ${esc(l)}`).join("<br>")||"（読み取れず）"}</div>
+    <div class="row"><b>正解</b><span style="font-weight:700">${it.q[1]}</span></div>
+    <div class="fix">${pass?`<button class="btn primary" onclick="nextQ()">${nextLabel()}</button>`:retryBtns}
+      ${pass?"":`<button class="btn" onclick="writeDone(true)">読み間違い：書けていた</button>`}</div>
+    ${auto?`<div class="autobar"><i style="animation-duration:${store.autoNext}s"></i></div>`:""}
+  </div>`;
+  if(auto) autoTimer = setTimeout(nextQ, store.autoNext*1000);
+}
+function writeDone(ok){ const it=cur.queue[cur.tpos]; it.rec = Object.assign(it.rec||{q:it.q[0],answer:it.q[1],read:"（自己確認）"}, {correct:ok}); nextQ(); }
+function rewrite(){ const it=cur.queue[cur.tpos]; it.tries++; it.phase="study"; setPadRows(0); renderTrain(); }
+function giveUp(){ const it=cur.queue[cur.tpos]; it.rec = Object.assign(it.rec||{q:it.q[0],answer:it.q[1],read:""}, {correct:false}); nextQ(); }
+function trainNext(){
+  if(cur.tpos < cur.queue.length-1){ cur.tpos++; setPadRows(0); renderTrain(); }
+  else finishTrain();
+}
+function finishTrain(){
+  setPadRows(0);
+  const items = cur.queue.filter(it=>it.rec);
+  const ok = items.filter(it=>it.rec.correct).length;
+  document.getElementById("rTitle").textContent = `${curSubj().name}　第${cur.set+1}回　弱点トレーニング`;
+  document.getElementById("rScore").innerHTML = `${ok}<small> / ${items.length}</small>`;
+  document.getElementById("rBest").textContent = ok===items.length ? "全部クリア！ 弱点をつぶせました。" : "まだ不安なものは、時間をおいてもう一度このセットに挑戦しよう。";
+  document.getElementById("rTrain").innerHTML = "";
+  fillTable(items.map(it=>({ mark:it.rec.correct,
+    label:(it.kind==="write"?"【書き取り】":it.kind==="sim"?"【類題】":"【再挑戦】")+it.q[0],
+    img:it.rec.img, read:it.rec.read, answer:it.q[1] })));
+  cur.mode = "done"; tick();
   show("result");
 }
 
@@ -764,6 +1024,11 @@ function openSettings(){
   document.getElementById("sModelRead").value = store.modelRead||"gemini-flash-latest";
   document.getElementById("sModelJudge").value = store.modelJudge||"gemini-flash-lite-latest";
   document.getElementById("sPen").checked = !!store.penOnly;
+  document.getElementById("sTime").value = String(store.timeScale);
+  document.getElementById("sTimeUp").value = store.timeUp;
+  document.getElementById("sAuto").value = String(store.autoNext);
+  document.getElementById("sWriteN").value = String(store.writeN);
+  document.getElementById("sSimN").value = String(store.simN);
   document.getElementById("settings").classList.remove("hidden");
 }
 function closeSettings(){ document.getElementById("settings").classList.add("hidden"); }
@@ -772,6 +1037,11 @@ function saveSettings(){
   store.modelRead = document.getElementById("sModelRead").value.trim()||"gemini-flash-latest";
   store.modelJudge = document.getElementById("sModelJudge").value.trim()||"gemini-flash-lite-latest";
   store.penOnly = document.getElementById("sPen").checked;
+  store.timeScale = +document.getElementById("sTime").value;
+  store.timeUp = document.getElementById("sTimeUp").value;
+  store.autoNext = +document.getElementById("sAuto").value;
+  store.writeN = +document.getElementById("sWriteN").value;
+  store.simN = +document.getElementById("sSimN").value;
   save(); closeSettings(); renderHome();
 }
 function resetScores(){ if(confirm("すべての成績を消去しますか？")){ store.best={}; save(); renderHome(); } }
