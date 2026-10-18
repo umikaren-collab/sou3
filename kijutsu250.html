@@ -800,6 +800,22 @@ function itemFromKey(key){
   const id = /^\d+$/.test(set) ? +set : set, st = getSet(si,id);
   return st && st.qs[+qi] ? { si, set:id, qi:+qi, q:st.qs[+qi], st, key } : null;
 }
+/* まだ習っていない単元の問題は、習う予定の週まで「今日の10問」・ウォームアップ・補強に出さない
+   （日付＝出し始める日。"9999"＝習った時期がわかるまで出さない） */
+const NOT_YET = {
+  // 理科 天体（地球と宇宙）：未習
+  "rika-3-7":"9999", "rika-3-8":"9999", "rika-3-9":"9999", "rika-6-6":"9999", "rika-6-7":"9999",
+  // 理科 運動とエネルギー：10/26の週から
+  "rika-0-2":"2026-10-26", "rika-0-6":"2026-10-26", "rika-0-9":"2026-10-26", "rika-4-2":"2026-10-26", "rika-5-2":"2026-10-26",
+  // 社会 司法・地方自治：11/30の週から
+  "shakai-4-4":"2026-11-30", "shakai-4-5":"2026-11-30", "shakai-6-2":"2026-11-30", "shakai-6-3":"2026-11-30", "shakai-6-4":"2026-11-30",
+  // 社会 経済：12/7の週から
+  "shakai-4-6":"2026-12-07", "shakai-4-7":"2026-12-07", "shakai-4-8":"2026-12-07", "shakai-6-5":"2026-12-07", "shakai-6-6":"2026-12-07", "shakai-6-7":"2026-12-07",
+  // 社会 国際社会（国際連合）：未習
+  "shakai-4-9":"9999"
+};
+function isOpen(key){ const d = NOT_YET[key]; return !d || todayStr() >= d; }
+function openItem(it){ return !!it && isOpen(it.key); }
 function unitLabel(it){ return typeof it.set==="number" ? `第${it.set+1}回 ${it.st.name}` : it.st.name; }
 function studyNo(date){ return Object.keys(store.hist).filter(d=>d<date && Object.keys(store.hist[d].subj||{}).length).length + 1; }
 function histToday(){ const t=todayStr(); return store.hist[t] = store.hist[t] || { day:studyNo(t), subj:{} }; }
@@ -858,13 +874,13 @@ function daysUntil(d){ return Math.round((parseDate(d)-parseDate(todayStr()))/86
 function warmCandidates(){
   const t = todayStr();
   return Object.entries(store.qstat).filter(([k,v])=>v.ok===false && v.last<t)
-    .sort((a,b)=>b[1].last.localeCompare(a[1].last)).slice(0,10)
+    .filter(([k])=>isOpen(k)).sort((a,b)=>b[1].last.localeCompare(a[1].last)).slice(0,10)
     .map(([k])=>itemFromKey(k)).filter(Boolean);
 }
 /* 今日の本番でまちがえた問題 */
 function todayWrongItems(){
   const h = store.hist[todayStr()]; if(!h) return [];
-  return Object.values(h.subj).flatMap(x=>x.wrong||[]).map(itemFromKey).filter(Boolean);
+  return Object.values(h.subj).flatMap(x=>x.wrong||[]).map(itemFromKey).filter(openItem);
 }
 function renderToday(){
   const t = todayStr(), plan = todayPlan(t), p = planState(), h = store.hist[t];
@@ -937,7 +953,7 @@ function startDaily(si){
 /* 今日の10問：直近でまちがえた問題を最大6問＋しばらく解いていない問題 */
 function pickMix(si){
   const all = [], sid = SUBJECTS[si].id;
-  allSetsOf(si).forEach(({id,st})=>st.qs.forEach((q,qi)=>all.push({ si, set:id, qi, q, st, key:`${sid}-${id}-${qi}` })));
+  allSetsOf(si).forEach(({id,st})=>st.qs.forEach((q,qi)=>{ const key = `${sid}-${id}-${qi}`; if(isOpen(key)) all.push({ si, set:id, qi, q, st, key }); }));
   const stat = k => store.qstat[k] || { n:0, ok:null, last:"" };
   const weak = shuffle(all.filter(x=>stat(x.key).ok===false)).slice(0,6);
   const rest = shuffle(all.filter(x=>!weak.includes(x)))
@@ -957,7 +973,7 @@ function startReview(){
     alert("今日は全問正解！ 補強はありません。お疲れさま。"); renderHome(); return;
   }
   const written = wrong.slice(0,12);
-  const others = Object.entries(store.qstat).filter(([k,v])=>v.ok===false).map(([k])=>itemFromKey(k)).filter(Boolean);
+  const others = Object.entries(store.qstat).filter(([k,v])=>v.ok===false).map(([k])=>itemFromKey(k)).filter(openItem);
   const pool = [...wrong]; others.forEach(x=>{ if(!pool.some(y=>y.key===x.key)) pool.push(x); });
   const mcs = shuffle(pool).slice(0, Math.min(10, Math.max(5, written.length))).map(x=>Object.assign({}, x, { mc:true }));
   startSession({ kind:"review", si:-1, set:-1, items:written.concat(mcs), daily:true });
@@ -1645,12 +1661,12 @@ function startWeekReview(){
   store.att.forEach(a=>{ if(a[3]!=="c" && !a[2] && a[0]>=mon && a[0]<=end) wrongCnt[a[1]]=(wrongCnt[a[1]]||0)+1; });
   const weakKeys = Object.keys(store.qstat).filter(k=>store.qstat[k].ok===false || (wrongCnt[k]||0)>=2)
     .sort((a,b)=>(wrongCnt[b]||0)-(wrongCnt[a]||0));
-  const weak = weakKeys.map(itemFromKey).filter(Boolean).slice(0,12);
+  const weak = weakKeys.map(itemFromKey).filter(openItem).slice(0,12);
   // 抜き打ち：今週の前半（月〜水）に正解して、その後出ていない問題
   const earlyEnd = addDays(mon,2);
   const okEarly = [...new Set(store.att.filter(a=>a[3]!=="c" && a[2] && a[0]>=mon && a[0]<=earlyEnd).map(a=>a[1]))]
     .filter(k=>store.qstat[k] && store.qstat[k].ok && store.qstat[k].last<=earlyEnd && !weak.some(x=>x.key===k));
-  const pop = shuffle(okEarly).slice(0, Math.max(4, 16-weak.length)).map(itemFromKey).filter(Boolean).map(x=>Object.assign(x,{pop:true}));
+  const pop = shuffle(okEarly).slice(0, Math.max(4, 16-weak.length)).map(itemFromKey).filter(openItem).map(x=>Object.assign(x,{pop:true}));
   let written = shuffle(weak.concat(pop)).slice(0,16);
   // 補強する問題が少ないときは、各教科の「今日の10問」から足して最低10問にする
   if(written.length<10){
@@ -1658,7 +1674,7 @@ function startWeekReview(){
     for(let r=0; written.length<10 && r<10; r++) lists.forEach(l=>{ if(written.length<10 && l[r]) written.push(l[r]); });
     written = shuffle(written);
   }
-  const mcPool = weakKeys.map(itemFromKey).filter(Boolean);
+  const mcPool = weakKeys.map(itemFromKey).filter(openItem);
   if(mcPool.length<16) shuffle(Object.keys(wrongCnt).concat(Object.keys(store.qstat))).forEach(k=>{ if(mcPool.length<16 && !mcPool.some(x=>x.key===k)){ const it=itemFromKey(k); if(it) mcPool.push(it); } });
   if(mcPool.length<8) written.forEach(it=>{ if(mcPool.length<8 && !mcPool.some(x=>x.key===it.key)) mcPool.push(it); });
   const mcs = shuffle(mcPool).slice(0,16).map(x=>Object.assign({}, x, { mc:true, pop:false }));
