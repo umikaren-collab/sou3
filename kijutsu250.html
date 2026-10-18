@@ -873,6 +873,8 @@ function renderToday(){
   const countdown = nb ? `<span class="cd">${nb.label}まで <b>${daysUntil(nb.date)===0?"今日":"あと"+daysUntil(nb.date)+"日"}</b></span>` : "";
   const step = (n,lb,sub,body,fin,curn)=>`<div class="step${curn===n?" cur":""}${fin?" fin":""}"><span class="no">${"①②③④⑤⑥"[n-1]}</span><span class="lb">${lb}<small>${sub}</small></span>${body}</div>`;
   let sub, steps="", tsum="";
+  // 日曜日でも今週の記録がまだないときは、土曜日と同じく5教科の「今日の10問」を出す
+  if(plan.type==="sun" && !weekDatesOf(plan.mon).length) plan.type = "sunfree";
 
   if(plan.type==="off"){
     sub = `今日は「${plan.ev.label}」`;
@@ -884,11 +886,15 @@ function renderToday(){
     const s2 = p.weekReview ? `<span class="st">✓ ${h&&h.week?`記述 ${h.week.w[1]}/${h.week.w[0]}・4択 ${h.week.c[1]}/${h.week.c[0]}`:"完了"}</span>`
       : (p.weekEval||!hasWeek) ? `<button class="btn primary" onclick="startWeekReview()">週末の弱点補強へ →</button>` : `<span class="st">週の評価のあとに行います</span>`;
     const curn = hasWeek && !p.weekEval ? 1 : !p.weekReview ? 2 : 0;
-    steps = step(1,"1週間の評価","先週と比較・音声で2〜3分",s1,!!p.weekEval,curn) + step(2,"週末の弱点補強","約30分（記述→4択）",s2,!!p.weekReview,curn);
+    const s3 = `<div class="tlist">${SUBJECTS.map((s,si)=>{ const sc = p.done[s.id];
+        return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:"今日の10問"}</small></button>`; }).join("")}</div>`;
+    steps = step(1,"1週間の評価","先週と比較・音声で2〜3分",s1,!!p.weekEval,curn) + step(2,"週末の弱点補強","約30分（記述→4択）",s2,!!p.weekReview,curn)
+          + step(3,"もっと解きたいとき","自由：5教科の今日の10問",s3,false,0);
     if(p.weekReview) tsum = "🎉 1週間のメニュー完了！おつかれさま。来週もいっしょにがんばろうね。";
   } else {
     const done5 = allSubjDone(p), light = plan.type==="light";
     sub = light ? `今日は「${plan.ev.label}」：4択で軽く総復習` : plan.type==="sat" ? "土曜日：今日の10問（苦手優先＋全範囲から）"
+        : plan.type==="sunfree" ? "日曜日：今週の記録がまだないので、今日は5教科の「今日の10問」を解こう（新しい週の問題は月曜から）"
         : plan.wk ? `${weekLabel(plan.mon)}：厚物と同じ範囲の新しい問題` : "今日の10問（全範囲から）";
     if(plan.ev && !plan.ev.mode) sub += `　／　今日は${plan.ev.label}`;
     const warmN = light ? 0 : warmCandidates().length;
@@ -1645,9 +1651,16 @@ function startWeekReview(){
   const okEarly = [...new Set(store.att.filter(a=>a[3]!=="c" && a[2] && a[0]>=mon && a[0]<=earlyEnd).map(a=>a[1]))]
     .filter(k=>store.qstat[k] && store.qstat[k].ok && store.qstat[k].last<=earlyEnd && !weak.some(x=>x.key===k));
   const pop = shuffle(okEarly).slice(0, Math.max(4, 16-weak.length)).map(itemFromKey).filter(Boolean).map(x=>Object.assign(x,{pop:true}));
-  const written = shuffle(weak.concat(pop)).slice(0,16);
+  let written = shuffle(weak.concat(pop)).slice(0,16);
+  // 補強する問題が少ないときは、各教科の「今日の10問」から足して最低10問にする
+  if(written.length<10){
+    const lists = SUBJECTS.map((_,si)=>pickMix(si).filter(it=>!written.some(x=>x.key===it.key)));
+    for(let r=0; written.length<10 && r<10; r++) lists.forEach(l=>{ if(written.length<10 && l[r]) written.push(l[r]); });
+    written = shuffle(written);
+  }
   const mcPool = weakKeys.map(itemFromKey).filter(Boolean);
   if(mcPool.length<16) shuffle(Object.keys(wrongCnt).concat(Object.keys(store.qstat))).forEach(k=>{ if(mcPool.length<16 && !mcPool.some(x=>x.key===k)){ const it=itemFromKey(k); if(it) mcPool.push(it); } });
+  if(mcPool.length<8) written.forEach(it=>{ if(mcPool.length<8 && !mcPool.some(x=>x.key===it.key)) mcPool.push(it); });
   const mcs = shuffle(mcPool).slice(0,16).map(x=>Object.assign({}, x, { mc:true, pop:false }));
   if(!written.length && !mcs.length){ alert("今週は補強する問題がありません。すばらしい！"); planState().weekReview="done"; save(); renderHome(); return; }
   startSession({ kind:"week", si:-1, set:-1, items:written.concat(mcs), daily:true });
