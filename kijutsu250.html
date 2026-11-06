@@ -303,6 +303,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 </div>
 
 <script src="weeks.js"></script>
+<script src="shindan4.js"></script>
 <script>
 /* ============================================================
    問題データ
@@ -756,7 +757,7 @@ function load(){ try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)||"nul
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 load();
 if(!store.days) store.days = {};
-if(!window.WEEKS) window.WEEKS = {}; if(!window.EVENTS) window.EVENTS = [];
+if(!window.WEEKS) window.WEEKS = {}; if(!window.EVENTS) window.EVENTS = []; if(!window.SPECIAL) window.SPECIAL = {};
 
 /* 日付ユーティリティ（端末の日本時間で扱う） */
 function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -774,8 +775,11 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.rand
    セットID：基本は 0〜6 の数字、週ごとは "w20261019d1" のような文字列
    ============================================================ */
 function weekSetId(mon,k){ return "w"+mon.replace(/-/g,"")+"d"+(k+1); }
+function spSetId(d,k){ return "x"+d.replace(/-/g,"")+"n"+(k+1); }
 function getSet(si, id){
   if(typeof id==="number" || /^\d+$/.test(id)) return SUBJECTS[si].sets[+id];
+  const sp = String(id).match(/^x(\d{4})(\d{2})(\d{2})n(\d+)$/);
+  if(sp){ const d = SPECIAL[`${sp[1]}-${sp[2]}-${sp[3]}`]; return d && d.subjects[SUBJECTS[si].id] ? d.subjects[SUBJECTS[si].id][+sp[4]-1] : null; }
   const m = String(id).match(/^w(\d{4})(\d{2})(\d{2})d(\d)$/); if(!m) return null;
   const wk = WEEKS[`${m[1]}-${m[2]}-${m[3]}`];
   return wk && wk.subjects[SUBJECTS[si].id] ? wk.subjects[SUBJECTS[si].id][+m[4]-1] : null;
@@ -787,6 +791,11 @@ function allSetsOf(si){
   Object.keys(WEEKS).sort().forEach(mon=>{
     if(mon > thisMon) return;
     (WEEKS[mon].subjects[SUBJECTS[si].id]||[]).forEach((st,k)=>out.push({ id:weekSetId(mon,k), st }));
+  });
+  /* 特別メニュー（診断対策など）は、その日になったら「今日の10問」・補強にも使う */
+  Object.keys(SPECIAL).sort().forEach(d=>{
+    if(d > todayStr()) return;
+    (SPECIAL[d].subjects[SUBJECTS[si].id]||[]).forEach((st,k)=>out.push({ id:spSetId(d,k), st }));
   });
   return out;
 }
@@ -847,6 +856,7 @@ function eventOn(d){ return EVENTS.find(e=>e.date===d); }
 function todayPlan(d){
   d = d || todayStr();
   const ev = eventOn(d), wd = parseDate(d).getDay(), mon = mondayOf(d), wk = WEEKS[mon];
+  if(SPECIAL[d]) return { type:"special", sp:SPECIAL[d], d, ev, mon, wk };
   if(ev && ev.mode==="off")   return { type:"off", ev, mon, wk };
   if(ev && ev.mode==="light") return { type:"light", ev, mon, wk };
   if(wd===0) return { type:"sun", mon, wk };
@@ -857,6 +867,13 @@ function todayPlan(d){
 function subjMenu(si, plan){
   const sid = SUBJECTS[si].id;
   if(plan.type==="light") return { kind:"mix", light:true, name:"総復習（4択）" };
+  if(plan.type==="special"){
+    const sets = plan.sp.subjects[sid]||[], got = (planState().sp||{})[sid]||{};
+    const k = sets.findIndex((_,i)=>got[i]==null);
+    if(!sets.length) return { kind:"mix", name:"今日の10問" };
+    if(k<0) return { kind:"spdone", n:sets.length, name:"全部終わり" };
+    return { kind:"day", id:spSetId(plan.d,k), k, n:sets.length, name:`${k+1}/${sets.length}セット目：${sets[k].name}` };
+  }
   if(plan.type==="week" && plan.wk && plan.wk.subjects[sid] && plan.wk.subjects[sid][plan.idx])
     return { kind:"day", id:weekSetId(plan.mon, plan.idx), name:plan.wk.subjects[sid][plan.idx].name };
   return { kind:"mix", name:"今日の10問" };
@@ -907,10 +924,12 @@ function renderToday(){
     if(p.weekReview) tsum = "🎉 1週間のメニュー完了！おつかれさま。来週もいっしょにがんばろうね。";
   } else {
     const done5 = allSubjDone(p), light = plan.type==="light";
-    sub = light ? `今日は「${plan.ev.label}」：4択で軽く総復習` : plan.type==="sat" ? "土曜日：今日の10問（苦手優先＋全範囲から）"
+    const special = plan.type==="special";
+    sub = special ? `${plan.sp.label}：${plan.sp.note}`
+        : light ? `今日は「${plan.ev.label}」：4択で軽く総復習` : plan.type==="sat" ? "土曜日：今日の10問（苦手優先＋全範囲から）"
         : plan.type==="sunfree" ? "日曜日：今週の記録がまだないので、今日は5教科の「今日の10問」を解こう（新しい週の問題は月曜から）"
         : plan.wk ? `${weekLabel(plan.mon)}：厚物と同じ範囲の新しい問題` : "今日の10問（全範囲から）";
-    if(plan.ev && !plan.ev.mode) sub += `　／　今日は${plan.ev.label}`;
+    if(plan.ev && (!plan.ev.mode || special)) sub += `　／　今日は${plan.ev.label}`;
     const warmN = light ? 0 : warmCandidates().length;
     let s1;
     if(light) s1 = `<span class="st">今日はとばします</span>`;
@@ -919,6 +938,11 @@ function renderToday(){
     else s1 = `<span class="st">前日までの弱点はありません</span>`;
     const s2 = `<div class="tlist">${SUBJECTS.map((s,si)=>{
         const sc = p.done[s.id], m = subjMenu(si, plan);
+        if(special){
+          const x = h && h.subj[s.id] && h.subj[s.id].raw;
+          const lb = m.kind==="spdone" ? `✓ ${m.n}セット完了（${x?x[0]+"/"+x[1]:""}）` : `${esc(m.name)}${x?`<br>ここまで ${x[0]}/${x[1]}`:""}`;
+          return `<button class="tbtn${m.kind==="spdone"?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${lb}</small></button>`;
+        }
         return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:esc(m.name)}</small></button>`;
       }).join("")}</div>`;
     const s3 = done5 ? `<button class="btn ${p.evald?"":"primary"}" onclick="openEval()">${p.evald?"もう一度聞く":"今日の評価を聞く 🔊"}</button>` : `<span class="st">5教科が終わったら聞けます</span>`;
@@ -928,9 +952,13 @@ function renderToday(){
     else if(done5) s4 = `<button class="btn ${p.evald?"primary":""}" onclick="startReview()">今日まちがえた問題をもう一度 →</button>`;
     else s4 = `<span class="st">評価のあとに行います</span>`;
     const curn = !light && !p.warm && warmN ? 1 : !done5 ? 2 : !p.evald ? 3 : (!light && !p.review) ? 4 : 0;
-    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,"5教科×10問",light?"4択で15分":"35〜40分",s2,done5,curn)
+    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,special?"5教科のセットを順番に":"5教科×10問",special?`全${SUBJECTS.reduce((t,x)=>t+((plan.sp.subjects[x.id]||[]).length),0)}セット・1セット約6〜8分（教科を交互にすると集中が続く）`:light?"4択で15分":"35〜40分",s2,done5,curn)
           + step(3,"今日の評価","音声で1〜2分",s3,!!p.evald,curn) + step(4,"弱点補強2回目","10〜15分（記述→4択）",s4,light||!!p.review,curn);
     const sum = SUBJECTS.reduce((a,s)=>a+(p.done[s.id]||0),0);
+    if(special){
+      const raw = SUBJECTS.reduce((a,s)=>{ const x = h && h.subj[s.id] && h.subj[s.id].raw; return x ? [a[0]+x[0], a[1]+x[1]] : a; },[0,0]);
+      tsum = `${done5 && p.review?"🎉 今日のメニュー完了！お疲れさま。　":""}今日の正解 <b>${raw[0]}</b> / ${raw[1]}問${raw[1]?`（${Math.round(raw[0]/raw[1]*100)}%）`:""}`;
+    } else
     tsum = `${done5 && (light||p.review)?"🎉 今日のメニュー完了！お疲れさま。　":""}今日の合計 <b>${sum}</b> / 50点`;
   }
   document.getElementById("today").innerHTML = `<div class="today">
@@ -943,6 +971,11 @@ function renderToday(){
 function skipWarm(){ planState().warm="skip"; save(); renderHome(); }
 function startDaily(si){
   const p = planState(), plan = todayPlan(), sid = SUBJECTS[si].id;
+  if(plan.type==="special"){
+    const m = subjMenu(si, plan);
+    if(m.kind==="day") return startSession({ kind:"day", si, set:m.id, items:makeItems(si, m.id), daily:true, sp:m.k });
+    if(m.kind==="spdone"){ if(confirm("この教科は今日のセットが全部終わりました。おかわりで「今日の10問」を解きますか？（記録には入りません）")) startSession({ kind:"mix", si, set:-1, items:pickMix(si), daily:false }); return; }
+  }
   if(p.done[sid]!=null && !confirm("今日はもう解きました。もう一度解きますか？（記録は最初の点数のままです）")) return;
   const daily = p.done[sid]==null, m = subjMenu(si, plan);
   if(m.kind==="day") startSession({ kind:"day", si, set:m.id, items:makeItems(si, m.id), daily });
@@ -1020,7 +1053,7 @@ function isMulti(){ return cur.kind==="warm" || cur.kind==="review" || cur.kind=
 function startSet(si,i,daily){ startSession({ kind:"set", si, set:i, items:makeItems(si,i), daily }); }
 function startSession(o){
   cancelAuto();
-  cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily, light:!!o.light, t0:Date.now() };
+  cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily, light:!!o.light, sp:(o.sp==null?null:o.sp), t0:Date.now() };
   timerReset(isMulti() ? 0 : itemsLimit(o.items));
   const color = o.si>=0 ? SUBJECTS[o.si].color : "var(--accent)";
   document.getElementById("quiz").style.setProperty("--c",color);
@@ -1297,7 +1330,7 @@ function nextQ(){
 function finishSet(){
   timerPause(); cancelAuto();
   // 解答を記録（問題ごとの最新成績は記述のときだけ更新）
-  const t = todayStr(), kindCode = { set:"t", mix:"t", warm:"w", review:"r", week:"k" }[cur.kind];
+  const t = todayStr(), kindCode = { set:"t", day:"t", mix:"t", warm:"w", review:"r", week:"k" }[cur.kind];
   cur.items.forEach((it,i)=>{
     const a = cur.answers[i]; if(!a) return;
     logAtt(it.key, a.correct, it.mc ? "c" : kindCode);
@@ -1319,6 +1352,18 @@ function finishSet(){
     if(isNew) store.best[s.id][cur.set] = score;
     line = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
   } else line = "今日の10問";
+  if(cur.daily && cur.sp!=null){
+    /* 特別メニュー：セットごとの点を記録し、全部終わったら10点満点に換算して「今日の点」にする */
+    const p = planState(), plan = todayPlan(), n = (plan.sp ? (plan.sp.subjects[s.id]||[]).length : 1) || 1;
+    p.sp = p.sp||{}; p.sp[s.id] = p.sp[s.id]||{}; p.sp[s.id][cur.sp] = score;
+    const h = histToday(), old = h.subj[s.id] && h.subj[s.id].raw ? h.subj[s.id] : { raw:[0,0], used:0, limit:0, wrong:[] };
+    const raw = [old.raw[0]+score, old.raw[1]+10], wrongs = old.wrong.concat(cur.items.filter((it,i)=>!cur.answers[i].correct).map(it=>it.key));
+    h.subj[s.id] = { score:Math.round(raw[0]/raw[1]*10), raw, used:old.used+Math.round(elapsed()), limit:old.limit+(T.limit||0), timedOut:false,
+      wrong:wrongs, kind:"day", set:cur.set };
+    if(Object.keys(p.sp[s.id]).length>=n) p.done[s.id] = h.subj[s.id].score;
+    line = `今日の${s.name}：${Object.keys(p.sp[s.id]).length}/${n}セット（合計 ${raw[0]}/${raw[1]}）`;
+    cur.daily = false;
+  }
   if(cur.daily){
     const p = planState(); p.done[s.id] = score;
     histToday().subj[s.id] = { score, used:Math.round(elapsed()), limit:T.limit, timedOut:!!cur.timedOut,
@@ -1421,7 +1466,7 @@ function dayStats(date){
     const x = h.subj[s.id];
     const wrong = (x.wrong||[]).map(itemFromKey).filter(Boolean).map(it=>({ 単元:it.st.name, 問題:stripTags(it.q[0]), 正解:it.q[1] }));
     const st = (x.kind==="day"||x.kind==="set") ? getSet(SUBJECTS.indexOf(s), x.set) : null;
-    return { 教科:s.name, 単元:st?st.name:"今日の10問", 点数:x.score, 時間秒:x.used, 制限秒:x.limit, 時間切れ:x.timedOut, まちがえた問題:wrong };
+    return { 教科:s.name, 単元:x.raw?"診断④対策":(st?st.name:"今日の10問"), 点数:x.score, 素点:x.raw?`${x.raw[0]}/${x.raw[1]}問`:undefined, 時間秒:x.used, 制限秒:x.limit, 時間切れ:x.timedOut, まちがえた問題:wrong };
   });
   return { 日目:h.day, 日付:date, 合計:subj.reduce((t,x)=>t+x.点数,0), 教科別:subj,
     ウォームアップ: h.warm ? `${h.warm.ok}/${h.warm.n}問正解` : "なし",
@@ -1441,7 +1486,7 @@ async function openEval(){
   document.getElementById("eExtra").innerHTML = "";
   document.getElementById("eShare").innerHTML = "";
   document.getElementById("eStats").innerHTML = `<thead><tr><th>教科</th><th>点数</th><th>時間</th><th>まちがえた単元</th></tr></thead><tbody>${
-    today.教科別.map(x=>`<tr><td>${x.教科}</td><td style="font-weight:700">${x.点数} / 10</td><td>${x.制限秒?(x.時間切れ?"時間切れ":fmt(x.時間秒)+" / "+fmt(x.制限秒)):fmt(x.時間秒)}</td><td>${[...new Set(x.まちがえた問題.map(w=>w.単元))].join("、")||"—"}</td></tr>`).join("")
+    today.教科別.map(x=>`<tr><td>${x.教科}</td><td style="font-weight:700">${x.点数} / 10${x.素点?`<br><small>（${x.素点}）</small>`:""}</td><td>${x.制限秒?(x.時間切れ?"時間切れ":fmt(x.時間秒)+" / "+fmt(x.制限秒)):fmt(x.時間秒)}</td><td>${[...new Set(x.まちがえた問題.map(w=>w.単元))].join("、")||"—"}</td></tr>`).join("")
   }<tr><td><b>合計</b></td><td style="font-weight:800">${today.合計} / 50</td><td colspan="2">${prev?`前回（${mdLabel(prev.日付)}）は ${prev.合計} / 50`:""}</td></tr></tbody>`;
   const nextBtn = () => document.getElementById("eNext").innerHTML = p.review ? "" :
     `<div class="trainbox" style="margin-top:14px"><div class="t"><b>最後に、今日まちがえた問題をもう一度。</b><br>前半は記述、後半は4択で仕上げます。</div>
