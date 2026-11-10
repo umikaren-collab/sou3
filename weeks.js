@@ -2,7 +2,7 @@
    週ごとの問題と予定表
    ・WEEKS["月曜日の日付"] = { label, note, subjects:{ 教科id:[月,火,水,木,金 の5セット] } }
    ・各セット：{ name, src(厚物の範囲), mode("exact"=正解を見せずに書き起こし→照合), hint, rule(AI採点基準), time(10問の標準秒), qs:[[問題, 正解, 別解...]] }
-   ・EVENTS：予定。mode "off"=メニュー休み / "light"=4択の軽い総復習 / なし=表示だけ
+   ・EVENTS：予定。mode "off"=メニュー休み / "light"=記述10問の軽い総復習 / なし=表示だけ
    ============================================================ */
 window.WEEKS = window.WEEKS || {};
 window.EVENTS = [

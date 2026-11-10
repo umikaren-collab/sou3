@@ -853,7 +853,7 @@ function fmt(sec){ const neg = sec<0; sec = Math.abs(Math.ceil(sec)); return (ne
 /* ============================================================
    今日のメニュー（曜日と予定表で決まる）
    月〜金：その週の新しい問題（weeks.js）／土：今日の10問（苦手優先）／日：1週間の振り返り
-   予定表 off＝お休み、light＝4択の軽い総復習
+   予定表 off＝お休み、light＝記述10問の軽い総復習（4択は使わない：2026/11/10〜）
    平日・土：① ウォームアップ ② 5教科 ③ 今日の評価 ④ 弱点補強2回目
    日　　　：① 1週間の評価 ② 週末の弱点補強
    ============================================================ */
@@ -871,7 +871,7 @@ function todayPlan(d){
 /* その日の各教科のメニュー */
 function subjMenu(si, plan){
   const sid = SUBJECTS[si].id;
-  if(plan.type==="light") return { kind:"mix", light:true, name:"総復習（4択）" };
+  if(plan.type==="light") return { kind:"mix", light:true, name:"軽めの総復習（10問）" };
   if(plan.type==="special"){
     const sets = plan.sp.subjects[sid]||[], got = (planState().sp||{})[sid]||{};
     const k = sets.findIndex((_,i)=>got[i]==null);
@@ -919,19 +919,19 @@ function renderToday(){
     sub = `日曜日：1週間の振り返り（${weekLabel(plan.mon)}）`;
     const hasWeek = weekDatesOf(plan.mon).length>0;
     const s1 = hasWeek ? `<button class="btn ${p.weekEval?"":"primary"}" onclick="openWeekEval()">${p.weekEval?"もう一度聞く":"1週間の評価を聞く 🔊"}</button>` : `<span class="st">今週の記録がまだありません</span>`;
-    const s2 = p.weekReview ? `<span class="st">✓ ${h&&h.week?`記述 ${h.week.w[1]}/${h.week.w[0]}・4択 ${h.week.c[1]}/${h.week.c[0]}`:"完了"}</span>`
+    const s2 = p.weekReview ? `<span class="st">✓ ${h&&h.week?`${h.week.w[1]+h.week.c[1]}/${h.week.w[0]+h.week.c[0]}問`:"完了"}</span>`
       : (p.weekEval||!hasWeek) ? `<button class="btn primary" onclick="startWeekReview()">週末の弱点補強へ →</button>` : `<span class="st">週の評価のあとに行います</span>`;
     const curn = hasWeek && !p.weekEval ? 1 : !p.weekReview ? 2 : 0;
     const s3 = `<div class="tlist">${SUBJECTS.map((s,si)=>{ const sc = p.done[s.id];
         return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:"今日の15問"}</small></button>`; }).join("")}</div>`;
-    steps = step(1,"1週間の評価","先週と比較・音声で2〜3分",s1,!!p.weekEval,curn) + step(2,"週末の弱点補強","約30分（記述→4択）",s2,!!p.weekReview,curn)
+    steps = step(1,"1週間の評価","先週と比較・音声で2〜3分",s1,!!p.weekEval,curn) + step(2,"週末の弱点補強","約30分（すべて記述）",s2,!!p.weekReview,curn)
           + step(3,"もっと解きたいとき","自由：5教科の今日の10問",s3,false,0);
     if(p.weekReview) tsum = "🎉 1週間のメニュー完了！おつかれさま。来週もいっしょにがんばろうね。";
   } else {
     const done5 = allSubjDone(p), light = plan.type==="light";
     const special = plan.type==="special";
     sub = special ? `${plan.sp.label}：${plan.sp.note}`
-        : light ? `今日は「${plan.ev.label}」：4択で軽く総復習` : plan.type==="sat" ? "土曜日：今日の10問（苦手優先＋全範囲から）"
+        : light ? `今日は「${plan.ev.label}」：記述10問で軽く総復習` : plan.type==="sat" ? "土曜日：今日の10問（苦手優先＋全範囲から）"
         : plan.type==="sunfree" ? "日曜日：今週の記録がまだないので、今日は5教科の「今日の10問」を解こう（新しい週の問題は月曜から）"
         : plan.wk ? `${weekLabel(plan.mon)}：厚物と同じ範囲の新しい問題` : "今日の10問（全範囲から）";
     if(plan.ev && (!plan.ev.mode || special)) sub += `　／　今日は${plan.ev.label}`;
@@ -953,12 +953,12 @@ function renderToday(){
     const s3 = done5 ? `<button class="btn ${p.evald?"":"primary"}" onclick="openEval()">${p.evald?"もう一度聞く":"今日の評価を聞く 🔊"}</button>` : `<span class="st">5教科が終わったら聞けます</span>`;
     let s4;
     if(light) s4 = `<span class="st">今日はありません</span>`;
-    else if(p.review) s4 = `<span class="st">✓ ${h&&h.review?`記述 ${h.review.w[1]}/${h.review.w[0]}・4択 ${h.review.c[1]}/${h.review.c[0]}`:"完了"}</span>`;
+    else if(p.review) s4 = `<span class="st">✓ ${h&&h.review?`${h.review.w[1]+h.review.c[1]}/${h.review.w[0]+h.review.c[0]}問`:"完了"}</span>`;
     else if(done5) s4 = `<button class="btn ${p.evald?"primary":""}" onclick="startReview()">今日まちがえた問題をもう一度 →</button>`;
     else s4 = `<span class="st">評価のあとに行います</span>`;
     const curn = !light && !p.warm && warmN ? 1 : !done5 ? 2 : !p.evald ? 3 : (!light && !p.review) ? 4 : 0;
-    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,special?"5教科のセットを順番に":light?"5教科×10問":"5教科×15問",special?`全${SUBJECTS.reduce((t,x)=>t+((plan.sp.subjects[x.id]||[]).length),0)}セット・1セット約6〜8分（教科を交互にすると集中が続く）`:light?"4択で15分":"10問分の時間で15問（数国社は＋苦手5問）",s2,done5,curn)
-          + step(3,"今日の評価","音声で1〜2分",s3,!!p.evald,curn) + step(4,"弱点補強2回目","10〜15分（記述→4択）",s4,light||!!p.review,curn);
+    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,special?"5教科のセットを順番に":light?"5教科×10問":"5教科×15問",special?`全${SUBJECTS.reduce((t,x)=>t+((plan.sp.subjects[x.id]||[]).length),0)}セット・1セット約6〜8分（教科を交互にすると集中が続く）`:light?"記述で15分":"10問分の時間で15問（数国社は＋苦手5問）",s2,done5,curn)
+          + step(3,"今日の評価","音声で1〜2分",s3,!!p.evald,curn) + step(4,"弱点補強2回目","10〜15分（すべて記述）",s4,light||!!p.review,curn);
     const sum = SUBJECTS.reduce((a,s)=>a+(p.done[s.id]||0),0);
     if(special){
       const raw = SUBJECTS.reduce((a,s)=>{ const x = h && h.subj[s.id] && h.subj[s.id].raw; return x ? [a[0]+x[0], a[1]+x[1]] : a; },[0,0]);
@@ -983,7 +983,7 @@ function startDaily(si){
   }
   if(p.done[sid]!=null && !confirm("今日はもう解きました。もう一度解きますか？（記録は最初の点数のままです）")) return;
   const daily = p.done[sid]==null, m = subjMenu(si, plan);
-  if(m.light) return startSession({ kind:"mix", si, set:-1, items:pickMix(si).map(it=>Object.assign(it,{mc:true})), daily, light:true });
+  if(m.light) return startSession({ kind:"mix", si, set:-1, items:pickMix(si), daily, light:true });
   const base = m.kind==="day" ? makeItems(si, m.id) : pickMix(si);
   /* 15問：その日の10問＋苦手5問（数学・国語・社会）／復習5問（英語・理科）。制限時間は10問分のまま */
   const items = base.concat(extraFive(si, base));
@@ -1029,7 +1029,7 @@ function startWarm(){
   if(!items.length){ skipWarm(); return; }
   startSession({ kind:"warm", si:-1, set:-1, items, daily:true });
 }
-/* 補強2回目：前半は記述（今日まちがえた問題）、後半は4択（仕上げ） */
+/* 補強2回目：すべて記述（今日まちがえた問題＋前からの苦手を少し。最大15問） */
 function startReview(){
   const wrong = shuffle(todayWrongItems());
   if(!wrong.length){
@@ -1039,8 +1039,8 @@ function startReview(){
   const written = wrong.slice(0,12);
   const others = Object.entries(store.qstat).filter(([k,v])=>v.ok===false).map(([k])=>itemFromKey(k)).filter(openItem);
   const pool = [...wrong]; others.forEach(x=>{ if(!pool.some(y=>y.key===x.key)) pool.push(x); });
-  const mcs = shuffle(pool).slice(0, Math.min(10, Math.max(5, written.length))).map(x=>Object.assign({}, x, { mc:true }));
-  startSession({ kind:"review", si:-1, set:-1, items:written.concat(mcs), daily:true });
+  const more = shuffle(pool.filter(x=>!written.some(y=>y.key===x.key))).slice(0, 15-written.length);
+  startSession({ kind:"review", si:-1, set:-1, items:written.concat(more), daily:true });
 }
 
 /* ============================================================
@@ -1101,7 +1101,7 @@ function goHome(){ cancelAuto(); timerPause(); show("home"); renderHome(); }
 function setTitle(){
   if(cur.kind==="set") return `第${cur.set+1}回　${SUBJECTS[cur.subj].sets[cur.set].name}`;
   if(cur.kind==="day") return getSet(cur.subj, cur.set).name + (cur.plus ? (NIGATE[SUBJECTS[cur.subj].id] ? "＋苦手5問" : "＋復習5問") : "");
-  if(cur.kind==="mix") return cur.light ? "総復習（4択）" : cur.plus ? "今日の15問" : "今日の10問";
+  if(cur.kind==="mix") return cur.light ? "軽めの総復習" : cur.plus ? "今日の15問" : "今日の10問";
   return { warm:"ウォームアップ", review:"弱点補強2回目", week:"週末の弱点補強" }[cur.kind];
 }
 
@@ -1123,7 +1123,7 @@ function renderQ(){
   document.getElementById("qSetName").textContent =
     cur.kind==="set" ? setTitle() :
     cur.kind==="day" ? `${it.st.name}　（${it.st.src||""}）` :
-    cur.kind==="mix" ? `${cur.light?"総復習（4択）":cur.plus?"今日の15問":"今日の10問"}　（${unit}より）` :
+    cur.kind==="mix" ? `${cur.light?"軽めの総復習":cur.plus?"今日の15問":"今日の10問"}　（${unit}より）` :
     cur.kind==="warm" ? `ウォームアップ：前日までの弱点　（${unit}）` :
     cur.kind==="week" ? (it.mc ? `週末の弱点補強：4択で仕上げ　あと${n-cur.idx}問` : `週末の弱点補強：${it.pop?"抜き打ちチェック":"記述"}　（${unit}）　あと${n-cur.idx}問`) :
     it.mc ? `弱点補強2回目：4択で仕上げ　あと${n-cur.idx}問` : `弱点補強2回目：記述　（${unit}）`;
@@ -1446,7 +1446,7 @@ function finishReview(){
     document.getElementById("rScore").innerHTML = `${okW+okC}<small> / ${wr.length+mc.length}</small>`;
   }
   document.getElementById("rTitle").textContent = setTitle();
-  document.getElementById("rBest").textContent = cur.kind!=="warm" ? `記述 ${okW}/${wr.length}　・　4択 ${okC}/${mc.length}` : "";
+  document.getElementById("rBest").textContent = cur.kind!=="warm" ? (mc.length ? `記述 ${okW}/${wr.length}　・　4択 ${okC}/${mc.length}` : `正解 ${okW}/${wr.length}`) : "";
   document.getElementById("rTrain").innerHTML = `<div class="trainbox"><div class="t"><b>${msg}</b></div>
     <button class="btn primary" onclick="goHome()">今日のメニューへ →</button></div>`;
   fillTable(w.map(({it,a},i)=>({ mark:a.correct, label:`${it.mc?"【4択】":""}${SUBJECTS[it.si].name}　${a.q}`, img:a.img, read:a.read, answer:a.answer })));
@@ -1524,7 +1524,7 @@ async function openEval(){
     today.教科別.map(x=>`<tr><td>${x.教科}</td><td style="font-weight:700">${x.点数} / 10${x.素点?`<br><small>（${x.素点}）</small>`:""}</td><td>${x.制限秒?(x.時間切れ?"時間切れ":fmt(x.時間秒)+" / "+fmt(x.制限秒)):fmt(x.時間秒)}</td><td>${[...new Set(x.まちがえた問題.map(w=>w.単元))].join("、")||"—"}</td></tr>`).join("")
   }<tr><td><b>合計</b></td><td style="font-weight:800">${today.合計} / 50</td><td colspan="2">${prev?`前回（${mdLabel(prev.日付)}）は ${prev.合計} / 50`:""}</td></tr></tbody>`;
   const nextBtn = () => document.getElementById("eNext").innerHTML = p.review ? "" :
-    `<div class="trainbox" style="margin-top:14px"><div class="t"><b>最後に、今日まちがえた問題をもう一度。</b><br>前半は記述、後半は4択で仕上げます。</div>
+    `<div class="trainbox" style="margin-top:14px"><div class="t"><b>最後に、今日まちがえた問題をもう一度。</b><br>すべて記述で、もう一度書いて覚えます。</div>
      <button class="btn primary" onclick="startReview()">④ 弱点補強2回目へ →</button></div>`;
   show("evalv"); nextBtn();
   const box = document.getElementById("eText");
@@ -1686,7 +1686,7 @@ async function openWeekEval(){
     <div style="margin-top:10px;font-size:15px"><b>まちがいの多い単元：</b>${cs.まちがいの多い単元.map(u=>`${u.単元}（${u.回数}回）`).join("、")||"なし"}</div>
     ${ps?"":`<div style="margin-top:6px;font-size:13px;color:var(--sub)">先週の記録がないので、比較は来週からになります。</div>`}</div>`;
   document.getElementById("eNext").innerHTML = p.weekReview ? "" :
-    `<div class="trainbox" style="margin-top:14px"><div class="t"><b>週末の弱点補強（約30分）</b><br>今週2回以上まちがえた問題と抜き打ちチェックを記述で。後半は4択で仕上げます。</div>
+    `<div class="trainbox" style="margin-top:14px"><div class="t"><b>週末の弱点補強（約30分）</b><br>今週2回以上まちがえた問題と抜き打ちチェックを、すべて記述で。</div>
      <button class="btn primary" onclick="startWeekReview()">② 週末の弱点補強へ →</button></div>`;
   document.getElementById("eShare").innerHTML = `<button class="btn primary" onclick="shareWeek()">📤 おうちの人にLINEで送る</button><button class="btn" onclick="copyWeek()">📋 文章をコピー</button>`;
   show("evalv");
@@ -1732,7 +1732,7 @@ function localWeekEval(c, p){
   t += "このあとの弱点補強で、しっかり仕上げようね。";
   return t;
 }
-/* 週末の弱点補強：前半は記述（今週2回以上まちがえた問題＋苦手＋抜き打ち）、後半は4択 */
+/* 週末の弱点補強：すべて記述（今週2回以上まちがえた問題＋苦手＋抜き打ち） */
 function startWeekReview(){
   const mon = mondayOf(todayStr()), end = addDays(mon,6);
   const wrongCnt = {};
@@ -1745,19 +1745,15 @@ function startWeekReview(){
   const okEarly = [...new Set(store.att.filter(a=>a[3]!=="c" && a[2] && a[0]>=mon && a[0]<=earlyEnd).map(a=>a[1]))]
     .filter(k=>store.qstat[k] && store.qstat[k].ok && store.qstat[k].last<=earlyEnd && !weak.some(x=>x.key===k));
   const pop = shuffle(okEarly).slice(0, Math.max(4, 16-weak.length)).map(itemFromKey).filter(openItem).map(x=>Object.assign(x,{pop:true}));
-  let written = shuffle(weak.concat(pop)).slice(0,16);
-  // 補強する問題が少ないときは、各教科の「今日の10問」から足して最低10問にする
-  if(written.length<10){
+  let written = shuffle(weak.concat(pop)).slice(0,24);
+  // 補強する問題が少ないときは、各教科の「今日の10問」から足して最低15問にする
+  if(written.length<15){
     const lists = SUBJECTS.map((_,si)=>pickMix(si).filter(it=>!written.some(x=>x.key===it.key)));
-    for(let r=0; written.length<10 && r<10; r++) lists.forEach(l=>{ if(written.length<10 && l[r]) written.push(l[r]); });
+    for(let r=0; written.length<15 && r<10; r++) lists.forEach(l=>{ if(written.length<15 && l[r]) written.push(l[r]); });
     written = shuffle(written);
   }
-  const mcPool = weakKeys.map(itemFromKey).filter(openItem);
-  if(mcPool.length<16) shuffle(Object.keys(wrongCnt).concat(Object.keys(store.qstat))).forEach(k=>{ if(mcPool.length<16 && !mcPool.some(x=>x.key===k)){ const it=itemFromKey(k); if(it) mcPool.push(it); } });
-  if(mcPool.length<8) written.forEach(it=>{ if(mcPool.length<8 && !mcPool.some(x=>x.key===it.key)) mcPool.push(it); });
-  const mcs = shuffle(mcPool).slice(0,16).map(x=>Object.assign({}, x, { mc:true, pop:false }));
-  if(!written.length && !mcs.length){ alert("今週は補強する問題がありません。すばらしい！"); planState().weekReview="done"; save(); renderHome(); return; }
-  startSession({ kind:"week", si:-1, set:-1, items:written.concat(mcs), daily:true });
+  if(!written.length){ alert("今週は補強する問題がありません。すばらしい！"); planState().weekReview="done"; save(); renderHome(); return; }
+  startSession({ kind:"week", si:-1, set:-1, items:written, daily:true });
 }
 
 /* ============================================================
@@ -1775,7 +1771,7 @@ function weekReportText(){
     `苦手な問題：${cs.週末の苦手な問題数}問${pv(0, ps&&ps.週末の苦手な問題数, "問")}`,
     cs.定着率!=null ? `定着率（まちがえた問題に再挑戦して正解）：${cs.定着率}%` : "",
     cs.まちがいの多い単元.length ? `まちがいの多い単元：${cs.まちがいの多い単元.slice(0,3).map(u=>u.単元).join("、")}` : "",
-    h.week ? `週末の弱点補強：記述 ${h.week.w[1]}/${h.week.w[0]}・4択 ${h.week.c[1]}/${h.week.c[0]}` : "",
+    h.week ? `週末の弱点補強：${h.week.w[1]+h.week.c[1]}/${h.week.w[0]+h.week.c[0]}問` : "",
     h.weekText ? `\n― 先生のひとこと ―\n${h.weekText}` : ""
   ];
   return lines.filter(Boolean).join("\n");
@@ -1859,8 +1855,8 @@ function syncDay(date){
   SUBJECTS.forEach((s,i)=>row[s.name] = r.sc[i]==null ? "" : r.sc[i]);
   Object.assign(row, { "合計":r.n?r.total:"", "学習時間（分）":r.mins,
     "ウォームアップ": r.warm ? `${r.warm.ok}/${r.warm.n}` : "",
-    "弱点補強2回目": r.review ? `記述${r.review.w[1]}/${r.review.w[0]} 4択${r.review.c[1]}/${r.review.c[0]}` : "",
-    "週末の補強": r.week ? `記述${r.week.w[1]}/${r.week.w[0]} 4択${r.week.c[1]}/${r.week.c[0]}` : "",
+    "弱点補強2回目": r.review ? `${r.review.w[1]+r.review.c[1]}/${r.review.w[0]+r.review.c[0]}問` : "",
+    "週末の補強": r.week ? `${r.week.w[1]+r.week.c[1]}/${r.week.w[0]+r.week.c[0]}問` : "",
     "取り組んだ単元": r.topics.join("／"), "まちがえた単元": r.units.join("、"), "今日の評価": r.evalText });
   sendSheet({ sheet:"毎日", key:r.date, row });
 }
