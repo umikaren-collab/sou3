@@ -304,6 +304,7 @@ table.rv img{max-height:60px;max-width:220px;border:1px solid var(--line);border
 
 <script src="weeks.js"></script>
 <script src="shindan4.js"></script>
+<script src="nigate.js"></script>
 <script>
 /* ============================================================
    問題データ
@@ -757,7 +758,7 @@ function load(){ try{ const s = JSON.parse(localStorage.getItem(STORE_KEY)||"nul
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){} }
 load();
 if(!store.days) store.days = {};
-if(!window.WEEKS) window.WEEKS = {}; if(!window.EVENTS) window.EVENTS = []; if(!window.SPECIAL) window.SPECIAL = {};
+if(!window.WEEKS) window.WEEKS = {}; if(!window.EVENTS) window.EVENTS = []; if(!window.SPECIAL) window.SPECIAL = {}; if(!window.NIGATE) window.NIGATE = {};
 
 /* 日付ユーティリティ（端末の日本時間で扱う） */
 function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -778,6 +779,8 @@ function weekSetId(mon,k){ return "w"+mon.replace(/-/g,"")+"d"+(k+1); }
 function spSetId(d,k){ return "x"+d.replace(/-/g,"")+"n"+(k+1); }
 function getSet(si, id){
   if(typeof id==="number" || /^\d+$/.test(id)) return SUBJECTS[si].sets[+id];
+  const ng = String(id).match(/^n(\d+)$/);
+  if(ng){ const L = NIGATE[SUBJECTS[si].id]; return L ? L[+ng[1]] : null; }
   const sp = String(id).match(/^x(\d{4})(\d{2})(\d{2})n(\d+)$/);
   if(sp){ const d = SPECIAL[`${sp[1]}-${sp[2]}-${sp[3]}`]; return d && d.subjects[SUBJECTS[si].id] ? d.subjects[SUBJECTS[si].id][+sp[4]-1] : null; }
   const m = String(id).match(/^w(\d{4})(\d{2})(\d{2})d(\d)$/); if(!m) return null;
@@ -792,6 +795,8 @@ function allSetsOf(si){
     if(mon > thisMon) return;
     (WEEKS[mon].subjects[SUBJECTS[si].id]||[]).forEach((st,k)=>out.push({ id:weekSetId(mon,k), st }));
   });
+  /* 苦手の基礎・応用（nigate.js）：from の日から */
+  (NIGATE[SUBJECTS[si].id]||[]).forEach((st,k)=>{ if(!st.from || st.from<=todayStr()) out.push({ id:"n"+k, st }); });
   /* 特別メニュー（診断対策など）は、その日になったら「今日の10問」・補強にも使う */
   Object.keys(SPECIAL).sort().forEach(d=>{
     if(d > todayStr()) return;
@@ -918,7 +923,7 @@ function renderToday(){
       : (p.weekEval||!hasWeek) ? `<button class="btn primary" onclick="startWeekReview()">週末の弱点補強へ →</button>` : `<span class="st">週の評価のあとに行います</span>`;
     const curn = hasWeek && !p.weekEval ? 1 : !p.weekReview ? 2 : 0;
     const s3 = `<div class="tlist">${SUBJECTS.map((s,si)=>{ const sc = p.done[s.id];
-        return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:"今日の10問"}</small></button>`; }).join("")}</div>`;
+        return `<button class="tbtn${sc!=null?" done":""}" style="--c:${s.color}" onclick="startDaily(${si})">${s.name}<small>${sc!=null?`✓ ${sc}/10`:"今日の15問"}</small></button>`; }).join("")}</div>`;
     steps = step(1,"1週間の評価","先週と比較・音声で2〜3分",s1,!!p.weekEval,curn) + step(2,"週末の弱点補強","約30分（記述→4択）",s2,!!p.weekReview,curn)
           + step(3,"もっと解きたいとき","自由：5教科の今日の10問",s3,false,0);
     if(p.weekReview) tsum = "🎉 1週間のメニュー完了！おつかれさま。来週もいっしょにがんばろうね。";
@@ -952,7 +957,7 @@ function renderToday(){
     else if(done5) s4 = `<button class="btn ${p.evald?"primary":""}" onclick="startReview()">今日まちがえた問題をもう一度 →</button>`;
     else s4 = `<span class="st">評価のあとに行います</span>`;
     const curn = !light && !p.warm && warmN ? 1 : !done5 ? 2 : !p.evald ? 3 : (!light && !p.review) ? 4 : 0;
-    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,special?"5教科のセットを順番に":"5教科×10問",special?`全${SUBJECTS.reduce((t,x)=>t+((plan.sp.subjects[x.id]||[]).length),0)}セット・1セット約6〜8分（教科を交互にすると集中が続く）`:light?"4択で15分":"35〜40分",s2,done5,curn)
+    steps = step(1,"ウォームアップ","5〜10分",s1,light||p.warm||!warmN,curn) + step(2,special?"5教科のセットを順番に":light?"5教科×10問":"5教科×15問",special?`全${SUBJECTS.reduce((t,x)=>t+((plan.sp.subjects[x.id]||[]).length),0)}セット・1セット約6〜8分（教科を交互にすると集中が続く）`:light?"4択で15分":"10問分の時間で15問（数国社は＋苦手5問）",s2,done5,curn)
           + step(3,"今日の評価","音声で1〜2分",s3,!!p.evald,curn) + step(4,"弱点補強2回目","10〜15分（記述→4択）",s4,light||!!p.review,curn);
     const sum = SUBJECTS.reduce((a,s)=>a+(p.done[s.id]||0),0);
     if(special){
@@ -978,8 +983,36 @@ function startDaily(si){
   }
   if(p.done[sid]!=null && !confirm("今日はもう解きました。もう一度解きますか？（記録は最初の点数のままです）")) return;
   const daily = p.done[sid]==null, m = subjMenu(si, plan);
-  if(m.kind==="day") startSession({ kind:"day", si, set:m.id, items:makeItems(si, m.id), daily });
-  else startSession({ kind:"mix", si, set:-1, items:pickMix(si).map(it=>m.light?Object.assign(it,{mc:true}):it), daily, light:!!m.light });
+  if(m.light) return startSession({ kind:"mix", si, set:-1, items:pickMix(si).map(it=>Object.assign(it,{mc:true})), daily, light:true });
+  const base = m.kind==="day" ? makeItems(si, m.id) : pickMix(si);
+  /* 15問：その日の10問＋苦手5問（数学・国語・社会）／復習5問（英語・理科）。制限時間は10問分のまま */
+  const items = base.concat(extraFive(si, base));
+  startSession({ kind:m.kind==="day"?"day":"mix", si, set:m.kind==="day"?m.id:-1, items, daily, limit:itemsLimit(base), plus:true });
+}
+/* 毎日の15問のうち、追加の5問 */
+const EXTRA_N = 5;
+function extraFive(si, base){
+  const p = planState(), sid = SUBJECTS[si].id; p.ex = p.ex||{};
+  if(p.ex[sid]){ const kept = p.ex[sid].map(itemFromKey).filter(openItem); if(kept.length) return kept; }
+  const out = NIGATE[sid] ? pickNigate(si) : pickMix(si).filter(it=>!base.some(b=>b.key===it.key)).slice(0, EXTRA_N);
+  p.ex[sid] = out.map(it=>it.key); save();
+  return out;
+}
+/* 苦手5問：基礎3問＋応用2問。まちがえた問題 → まだ解いていない問題（単元を順番に）→ しばらく解いていない問題 */
+function pickNigate(si){
+  const sid = SUBJECTS[si].id, stat = k => store.qstat[k] || { n:0, ok:null, last:"" };
+  const sets = (NIGATE[sid]||[]).map((st,k)=>({ st, k })).filter(x=>!x.st.from || x.st.from<=todayStr());
+  const pick = (list, n)=>{
+    const items = list.flatMap(({st,k})=>st.qs.map((q,qi)=>({ si, set:"n"+k, qi, q, st, key:`${sid}-n${k}-${qi}` })));
+    const wrong = items.filter(it=>stat(it.key).ok===false).sort((a,b)=>(stat(a.key).last||"").localeCompare(stat(b.key).last||""));
+    const fresh = items.filter(it=>stat(it.key).n===0).sort((a,b)=>a.qi-b.qi || a.set.localeCompare(b.set));
+    const old = items.filter(it=>stat(it.key).n>0 && stat(it.key).ok!==false).sort((a,b)=>(stat(a.key).last||"").localeCompare(stat(b.key).last||""));
+    const out = []; [wrong.slice(0, Math.ceil(n/2)), fresh, old, wrong].forEach(g=>g.forEach(it=>{ if(out.length<n && !out.includes(it)) out.push(it); }));
+    return out;
+  };
+  const basic = sets.filter(x=>!x.st.lv), adv = sets.filter(x=>x.st.lv);
+  const nAdv = adv.length ? 2 : 0;
+  return pick(basic, EXTRA_N-nAdv).concat(pick(adv, nAdv));
 }
 /* 今日の10問：直近でまちがえた問題を最大6問＋しばらく解いていない問題 */
 function pickMix(si){
@@ -1054,7 +1087,8 @@ function startSet(si,i,daily){ startSession({ kind:"set", si, set:i, items:makeI
 function startSession(o){
   cancelAuto();
   cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily, light:!!o.light, sp:(o.sp==null?null:o.sp), t0:Date.now() };
-  timerReset(isMulti() ? 0 : itemsLimit(o.items));
+  cur.plus = !!o.plus;
+  timerReset(isMulti() ? 0 : (o.limit!=null ? o.limit : itemsLimit(o.items)));
   const color = o.si>=0 ? SUBJECTS[o.si].color : "var(--accent)";
   document.getElementById("quiz").style.setProperty("--c",color);
   document.getElementById("result").style.setProperty("--c",color);
@@ -1066,8 +1100,8 @@ function quitQuiz(){ if(confirm("中断してホームに戻りますか？")) g
 function goHome(){ cancelAuto(); timerPause(); show("home"); renderHome(); }
 function setTitle(){
   if(cur.kind==="set") return `第${cur.set+1}回　${SUBJECTS[cur.subj].sets[cur.set].name}`;
-  if(cur.kind==="day") return getSet(cur.subj, cur.set).name;
-  if(cur.kind==="mix") return cur.light ? "総復習（4択）" : "今日の10問";
+  if(cur.kind==="day") return getSet(cur.subj, cur.set).name + (cur.plus ? (NIGATE[SUBJECTS[cur.subj].id] ? "＋苦手5問" : "＋復習5問") : "");
+  if(cur.kind==="mix") return cur.light ? "総復習（4択）" : cur.plus ? "今日の15問" : "今日の10問";
   return { warm:"ウォームアップ", review:"弱点補強2回目", week:"週末の弱点補強" }[cur.kind];
 }
 
@@ -1089,7 +1123,7 @@ function renderQ(){
   document.getElementById("qSetName").textContent =
     cur.kind==="set" ? setTitle() :
     cur.kind==="day" ? `${it.st.name}　（${it.st.src||""}）` :
-    cur.kind==="mix" ? `${cur.light?"総復習（4択）":"今日の10問"}　（${unit}より）` :
+    cur.kind==="mix" ? `${cur.light?"総復習（4択）":cur.plus?"今日の15問":"今日の10問"}　（${unit}より）` :
     cur.kind==="warm" ? `ウォームアップ：前日までの弱点　（${unit}）` :
     cur.kind==="week" ? (it.mc ? `週末の弱点補強：4択で仕上げ　あと${n-cur.idx}問` : `週末の弱点補強：${it.pop?"抜き打ちチェック":"記述"}　（${unit}）　あと${n-cur.idx}問`) :
     it.mc ? `弱点補強2回目：4択で仕上げ　あと${n-cur.idx}問` : `弱点補強2回目：記述　（${unit}）`;
@@ -1351,7 +1385,7 @@ function finishSet(){
     const isNew = prev==null || score>prev;
     if(isNew) store.best[s.id][cur.set] = score;
     line = isNew ? (prev==null?"初回記録！":`自己ベスト更新！（前回まで ${prev}点）`) : `自己ベスト ${prev}点`;
-  } else line = "今日の10問";
+  } else line = cur.plus ? "今日の15問" : "今日の10問";
   if(cur.daily && cur.sp!=null){
     /* 特別メニュー：セットごとの点を記録し、全部終わったら10点満点に換算して「今日の点」にする */
     const p = planState(), plan = todayPlan(), n = (plan.sp ? (plan.sp.subjects[s.id]||[]).length : 1) || 1;
@@ -1364,15 +1398,16 @@ function finishSet(){
     line = `今日の${s.name}：${Object.keys(p.sp[s.id]).length}/${n}セット（合計 ${raw[0]}/${raw[1]}）`;
     cur.daily = false;
   }
+  const nq = cur.items.length, score10 = nq===10 ? score : Math.round(score/nq*10);
   if(cur.daily){
-    const p = planState(); p.done[s.id] = score;
-    histToday().subj[s.id] = { score, used:Math.round(elapsed()), limit:T.limit, timedOut:!!cur.timedOut,
+    const p = planState(); p.done[s.id] = score10;
+    histToday().subj[s.id] = { score:score10, raw:[score,nq], used:Math.round(elapsed()), limit:T.limit, timedOut:!!cur.timedOut,
       wrong: cur.items.filter((it,i)=>!cur.answers[i].correct).map(it=>it.key), kind:cur.kind, set:cur.set };
     cur.daily = false;
   }
   save(); syncDay();
   document.getElementById("rTitle").textContent = `${s.name}　${setTitle()}`;
-  document.getElementById("rScore").innerHTML = `${score}<small> / 10点</small>`;
+  document.getElementById("rScore").innerHTML = nq===10 ? `${score}<small> / 10点</small>` : `${score}<small> / ${nq}問（10点満点で ${score10}点）</small>`;
   if(T.limit){
     const used = elapsed();
     line += cur.timedOut ? `　／　⏱ 時間切れ（制限 ${fmt(T.limit)}）`
@@ -1466,7 +1501,7 @@ function dayStats(date){
     const x = h.subj[s.id];
     const wrong = (x.wrong||[]).map(itemFromKey).filter(Boolean).map(it=>({ 単元:it.st.name, 問題:stripTags(it.q[0]), 正解:it.q[1] }));
     const st = (x.kind==="day"||x.kind==="set") ? getSet(SUBJECTS.indexOf(s), x.set) : null;
-    return { 教科:s.name, 単元:x.raw?"診断④対策":(st?st.name:"今日の10問"), 点数:x.score, 素点:x.raw?`${x.raw[0]}/${x.raw[1]}問`:undefined, 時間秒:x.used, 制限秒:x.limit, 時間切れ:x.timedOut, まちがえた問題:wrong };
+    return { 教科:s.name, 単元:/^x/.test(String(x.set))?"診断④対策":(st?st.name+(x.raw&&x.raw[1]===15?"＋苦手・復習5問":""):"今日の15問"), 点数:x.score, 素点:x.raw?`${x.raw[0]}/${x.raw[1]}問`:undefined, 時間秒:x.used, 制限秒:x.limit, 時間切れ:x.timedOut, まちがえた問題:wrong };
   });
   return { 日目:h.day, 日付:date, 合計:subj.reduce((t,x)=>t+x.点数,0), 教科別:subj,
     ウォームアップ: h.warm ? `${h.warm.ok}/${h.warm.n}問正解` : "なし",
