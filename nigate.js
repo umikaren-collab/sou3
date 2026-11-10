@@ -12,6 +12,8 @@ const KANA = "現代仮名遣いのひらがなで答える。正しく書けて
 const KOKU = "語句で答える。意味や内容が正解と同じなら、表現が多少違っても正解。漢字・ひらがなどちらでも可。";
 const READ = "本文に合った内容で答えていれば正解。言い回しは正解例と違ってもよく、短くまとめてあってもよい。「〜から」「〜こと」などの文末の指定がある場合は、その形になっていること（多少違っても内容が正しければ正解）。";
 const SOC  = "用語・数値が正しければ正解。漢字の軽い誤りは、別の語と誤解されない程度なら正解。ひらがな・カタカナでも語として正しければ正解。";
+const SRC_M2 = "苦手の基礎（比例・反比例のグラフ）", SRC_E = "苦手の基礎（関係代名詞）";
+const ENG = "（　）に入る英単語1語のつづりが正しければ正解。大文字・小文字は問わない。正解欄にない語でも、文法的に正しく意味が通れば正解。";
 const SRC_M = "苦手の基礎（診断④：方程式・グラフ・面積・角度）", SRC_K = "苦手の基礎（診断④：古文・読解）", SRC_S = "苦手の基礎（診断④：公民）";
 
 NIGATE.sugaku = [
@@ -158,6 +160,82 @@ NIGATE.sugaku = [
     ["円周上の4点A、B、C、Dで ∠BAC ＝ 40° のとき、同じ弧BCに対する ∠BDC","40°","40"],
     ["△ABCで ∠A ＝ 50°、∠B と ∠C の二等分線の交点をPとするとき、∠BPC","115°","115"],
     ["三角形の3つの内角の比が 2：3：4 のとき、いちばん大きい角","80°","80"]
+  ]},
+  { name:"苦手：比例・反比例の式", src:SRC_M2, rule:MATH, time:300, qs:[
+    ["y は x に比例し、x ＝ 3 のとき y ＝ 12。y を x の式で表しなさい","y=4x"],
+    ["y は x に反比例し、x ＝ 2 のとき y ＝ 6。y を x の式で表しなさい","y=12/x"],
+    ["比例 y ＝ 3x で、x ＝ −2 のときの y の値","−6","y=−6"],
+    ["反比例 y ＝ 12／x で、x ＝ 4 のときの y の値","3","y=3"],
+    ["反比例 y ＝ −18／x で、x ＝ −3 のときの y の値","6","y=6"],
+    ["y は x に比例し、x ＝ −2 のとき y ＝ 8。x ＝ 5 のときの y の値","−20","y=−20"],
+    ["y は x に反比例し、x ＝ 3 のとき y ＝ −4。x ＝ 6 のときの y の値","−2","y=−2"],
+    ["比例 y ＝ ax のグラフが必ず通る点","原点","(0, 0)"],
+    ["反比例のグラフの曲線を何というか","双曲線"],
+    ["1冊150円のノートを x 冊買うときの代金を y 円とする。y を x の式で表しなさい","y=150x"]
+  ]},
+  { name:"苦手：比例・反比例のグラフ", src:SRC_M2, rule:MATH, time:330, qs:[
+    ["原点と点 (2, 6) を通る直線の式","y=3x"],
+    ["比例 y ＝ −2x のグラフは、右上がり・右下がりのどちらか","右下がり"],
+    ["反比例 y ＝ a／x のグラフが点 (3, 4) を通るとき、a の値","12","a=12"],
+    ["反比例 y ＝ 6／x のグラフ上で、x 座標・y 座標がともに正の整数である点の個数","4個","4"],
+    ["y ＝ 8／x と y ＝ 2x のグラフの交点のうち、x 座標が正の点の座標","(2, 4)"],
+    ["比例 y ＝ ax のグラフが点 (−3, 6) を通るとき、a の値","−2","a=−2"],
+    ["反比例 y ＝ −12／x で、x の変域が 2 ≦ x ≦ 6 のときの y の変域","−6≦y≦−2"],
+    ["反比例 y ＝ 12／x で、x の値が2倍になると、y の値は何倍になるか","1/2倍","2分の1倍","1/2"],
+    ["比例 y ＝ 3x で、x の変域が −1 ≦ x ≦ 2 のときの y の変域","−3≦y≦6"],
+    ["面積が24cm²の長方形の縦を x cm、横を y cm とする。y を x の式で表しなさい","y=24/x"]
+  ]},
+  { name:"応用：比例・反比例とグラフ", src:SRC_M2, lv:2, rule:MATH, time:450, qs:[
+    ["反比例のグラフ上に点 A(2, 6) がある。Aを通り x 軸に平行な直線と y 軸の交点をB、原点をOとするとき、△OABの面積","6"],
+    ["反比例 y ＝ 12／x のグラフ上の、x 座標が3の点Pから x 軸・y 軸に垂線をひいてできる長方形の面積","12"],
+    ["反比例 y ＝ a／x のグラフ上で、x 座標が4の点の y 座標は −3。x ＝ −6 のときの y の値","2","y=2"],
+    ["y ＝ 2x と y ＝ a／x のグラフの交点の x 座標が3のとき、a の値","18","a=18"],
+    ["歯数24の歯車Aと、歯数 x の歯車Bがかみ合っている。Aが1回転するときのBの回転数を y とする。y を x の式で表しなさい","y=24/x"],
+    ["歯数24の歯車Aと歯数8の歯車Bがかみ合っている。Aが1回転するとき、Bは何回転するか","3回転","3"],
+    ["y は x に比例し、x が2増えると y は6減る。比例定数","−3"],
+    ["反比例 y ＝ a／x で、x が1から3まで増加すると、y は6から2になる。a の値","6","a=6"],
+    ["y ＝ −3x と y ＝ −27／x のグラフの交点のうち、x 座標が正の点の座標","(3, −9)"],
+    ["点 (4, 2) を通る反比例のグラフで、x 座標が −1 の点の y 座標","−8"]
+  ]}
+];
+
+
+NIGATE.eigo = [
+  { name:"苦手：関係代名詞 who・which・that", src:SRC_E, mode:"exact", hint:"英単語", rule:ENG, qs:[
+    ["I have a friend (　　) lives in Osaka.","who","that"],
+    ["This is the book (　　) I bought yesterday.","which","that"],
+    ["The girl (　　) is singing is Yuki.","who","that"],
+    ["Look at the dog (　　) is running over there.","which","that"],
+    ["He is the man (　　) I met at the station.","who","that","whom"],
+    ["This is a picture (　　) was painted by Ken.","which","that"],
+    ["I know a boy (　　) can speak French.","who","that"],
+    ["The cake (　　) my mother made was good.","which","that"],
+    ["Do you know the woman (　　) is talking with Mr. Sato?","who","that"],
+    ["The bus (　　) goes to the airport is late.","which","that"]
+  ]},
+  { name:"苦手：関係代名詞の文", src:SRC_E, mode:"exact", hint:"英単語", rule:ENG, qs:[
+    ["The boy who (　　) tennis well is my brother.（play を適切な形に）","plays"],
+    ["The students who (　　) in the gym are my classmates.（be動詞を適切な形に）","are"],
+    ["I have a cat which (　　) white.（be動詞を適切な形に）","is"],
+    ["これは私が昨日読んだ本です。This is the book I (　　) yesterday.","read"],
+    ["彼女は私が尊敬している先生です。She is the teacher I (　　).","respect"],
+    ["私には東京に住んでいるおじがいます。I have an uncle who (　　) in Tokyo.","lives"],
+    ["ケンが撮った写真はきれいだった。The pictures Ken (　　) were beautiful.（take）","took"],
+    ["あなたが会いたい人はだれですか。Who is the person you want to (　　)?","meet","see"],
+    ["これは100年前に建てられた家です。This is a house (　　) was built 100 years ago.","which","that"],
+    ["私が昨日聞いた歌はとてもよかった。The song I (　　) yesterday was very good.（hear）","heard"]
+  ]},
+  { name:"応用：関係代名詞と分詞", src:SRC_E, lv:2, mode:"exact", hint:"英単語", rule:ENG, qs:[
+    ["The man (　　) you saw yesterday is my uncle.","who","that","whom"],
+    ["Everything (　　) he said was true.","that"],
+    ["This is the first book (　　) I read in English.","that","which"],
+    ["The people (　　) work at this store are kind.","who","that"],
+    ["Is this the bike (　　) you lost?","which","that"],
+    ["The letter (　　) to me was from Mike.（send を適切な形に）","sent"],
+    ["The girl (　　) the piano is my sister.（play を適切な形に）","playing"],
+    ["2文を1文に：I have a friend. He lives in Kyoto. → I have a friend (　　) lives in Kyoto.","who","that"],
+    ["2文を1文に：This is the watch. My father gave it to me. → This is the watch (　　) my father gave me.","which","that"],
+    ["The movie we watched last night (　　) exciting.（be動詞を適切な形に）","was"]
   ]}
 ];
 
