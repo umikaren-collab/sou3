@@ -1088,7 +1088,8 @@ function startSession(o){
   cancelAuto();
   cur = { mode:"test", kind:o.kind, subj:o.si, set:o.set, items:o.items, idx:0, answers:[], daily:!!o.daily, light:!!o.light, sp:(o.sp==null?null:o.sp), t0:Date.now() };
   cur.plus = !!o.plus;
-  timerReset(isMulti() ? 0 : (o.limit!=null ? o.limit : itemsLimit(o.items)));
+  /* ウォームアップ・補強も制限時間つき（時間の意識を持たせる：2026/11/10〜） */
+  timerReset(o.limit!=null ? o.limit : itemsLimit(o.items));
   const color = o.si>=0 ? SUBJECTS[o.si].color : "var(--accent)";
   document.getElementById("quiz").style.setProperty("--c",color);
   document.getElementById("result").style.setProperty("--c",color);
@@ -1447,6 +1448,9 @@ function finishReview(){
   }
   document.getElementById("rTitle").textContent = setTitle();
   document.getElementById("rBest").textContent = cur.kind!=="warm" ? (mc.length ? `記述 ${okW}/${wr.length}　・　4択 ${okC}/${mc.length}` : `正解 ${okW}/${wr.length}`) : "";
+  if(T.limit){ const used = elapsed();
+    msg += cur.timedOut ? `　⏱ 時間切れ（制限 ${fmt(T.limit)}）。残りの問題は×になり、また出題されます。`
+      : `　⏱ ${fmt(used)}（制限 ${fmt(T.limit)}${used>T.limit?`、${fmt(used-T.limit)} オーバー`:""}）`; }
   document.getElementById("rTrain").innerHTML = `<div class="trainbox"><div class="t"><b>${msg}</b></div>
     <button class="btn primary" onclick="goHome()">今日のメニューへ →</button></div>`;
   fillTable(w.map(({it,a},i)=>({ mark:a.correct, label:`${it.mc?"【4択】":""}${SUBJECTS[it.si].name}　${a.q}`, img:a.img, read:a.read, answer:a.answer })));
